@@ -4,11 +4,9 @@
 
 ## Stack
 
-|              |                           |
-| ------------ | ------------------------- |
 | Language     | Zig                       |
 | Graphics API | Vulkan (via `zig-vulkan`) |
-| Windowing    | GLFW                      |
+| Windowing    | GLFW   (via `zglfw`)      |
 
 ## Philosophy
 
