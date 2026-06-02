@@ -3,11 +3,12 @@
 > Open-source 3D engine built from scratch by [Foxdroid Labs](https://github.com/FoxdroidLabs).
 
 ## Stack
-|------------------------------------------|
-| Language     | Zig                       |
-| Graphics API | Vulkan (via `zig-vulkan`) |
-| Windowing    | GLFW   (via `zglfw`)      |
-|------------------------------------------|
+
+| Component    | Details                   |
+| ------------ | ------------------------- |
+| Language     | Zig 0.16.0                |
+| Graphics API | Vulkan (via `vulkan-zig`) |
+| Windowing    | GLFW (via `zglfw`)        |
 
 ## Philosophy
 
