@@ -1,0 +1,14 @@
+*
+
+!src/
+!src/**
+!assets/
+!assets/**
+!registry/
+!registry/**
+!build.zig
+!build.zig.zon
+!setup.sh
+!.gitignore
+!readme.md
+!installation.md

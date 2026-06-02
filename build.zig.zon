@@ -1,0 +1,20 @@
+.{
+    .name = .singularity_engine,
+    .version = "0.16.0",
+    .dependencies = .{
+        .vulkan = .{
+            .url = "git+https://github.com/Snektron/vulkan-zig#b496a6a561ffbbeb530b0f9ed4e059f88c0723a5",
+            .hash = "vulkan-0.0.0-r7Ytx7N9AwD7IZt5_XNHtkJ4G9qY0pCH-cpcOsbL8wzD",
+        },
+        .vulkan_headers = .{
+            .url = "git+https://github.com/KhronosGroup/Vulkan-Headers#015e25c3c91b70eb1a754d36fb14c4ba6ad9b0b9",
+            .hash = "N-V-__8AAHAZeALsJNAOsFHuMyyXDuoFVG48EQdnJGNAZ3Th",
+        },
+        .zglfw = .{
+            .url = "git+https://github.com/zig-gamedev/zglfw#51003c105d23db378bb59ce415a387b22f1b0892",
+            .hash = "zglfw-0.10.0-dev-zgVDNIy4IQDJNRy4jrP1As-SZxfJpuWhU1iJ-wBab_VD",
+        },
+    },
+    .paths = .{""},
+    .fingerprint = 0xc6330411dc784a35,
+}

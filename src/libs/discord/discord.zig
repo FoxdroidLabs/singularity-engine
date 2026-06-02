@@ -1,0 +1,24 @@
+const std = @import("std");
+const ipc = @import("ipc.zig");
+const presence = @import("presence.zig");
+
+pub const Client = struct {
+    fd: ipc.Fd,
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator, app_id: []const u8) !Client {
+        var path_buf: [256]u8 = undefined;
+        const path = try ipc.getSocketPath(&path_buf);
+        const fd = try ipc.connect(path);
+        try presence.handshake(fd, allocator, app_id);
+        return .{ .fd = fd, .allocator = allocator };
+    }
+
+    pub fn setActivity(self: *Client, details: []const u8, state: []const u8) !void {
+        try presence.setActivity(self.fd, self.allocator, details, state);
+    }
+
+    pub fn deinit(self: *Client) void {
+        ipc.close(self.fd);
+    }
+};
