@@ -1,3 +1,4 @@
+```
 .
 ├── .gitignore
 ├── assets
@@ -59,3 +60,4 @@
     │   └── libs.zig
     ├── main.zig
     └── root.zig
+    ```
