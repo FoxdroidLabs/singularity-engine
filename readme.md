@@ -3,10 +3,11 @@
 > Open-source 3D engine built from scratch by [Foxdroid Labs](https://github.com/FoxdroidLabs).
 
 ## Stack
-| | |
+|------------------------------------------|
 | Language     | Zig                       |
 | Graphics API | Vulkan (via `zig-vulkan`) |
 | Windowing    | GLFW   (via `zglfw`)      |
+|------------------------------------------|
 
 ## Philosophy
 
@@ -59,15 +60,15 @@ Everything is built from scratch — no third-party libs except Vulkan and GLFW.
 
 ## Project Structure
 
-structure.md
+``structure.md``
 
 ## Utils
 
-# Count lines of Zig source
+# Count lines of Zig source (Linux only)
 
 find . -type f -name "\*.zig" | xargs wc -l
 
-# Count chars of Zig source
+# Count chars of Zig source (Linux only)
 
 find . -type f -name "\*.zig" | xargs wc -c
 
