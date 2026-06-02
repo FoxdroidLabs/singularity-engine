@@ -12,7 +12,7 @@
 
 ## Philosophy
 
-Everything is built from scratch — no third-party libs except Vulkan and GLFW.
+Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ## Roadmap
 
