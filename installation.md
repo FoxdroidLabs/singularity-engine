@@ -4,7 +4,7 @@ A custom 3D game engine built in Zig with Vulkan rendering.
 
 ## Prerequisites
 
-- [Zig 0.16.0](https://ziglang.org/download/) — exact version required
+- [Zig 0.16.0](https://ziglang.org/download/), exact version required
 - Vulkan SDK (up-to-date Vulkan drivers)
 - Git
 
@@ -12,8 +12,8 @@ A custom 3D game engine built in Zig with Vulkan rendering.
 
 Dependencies are managed via `build.zig.zon` and fetched automatically:
 
-- [vulkan-zig](https://github.com/Snektron/vulkan-zig) — Vulkan bindings for Zig
-- [zglfw](https://github.com/zig-gamedev/zglfw) — GLFW bindings for Zig
+- [vulkan-zig](https://github.com/Snektron/vulkan-zig), Vulkan bindings for Zig
+- [zglfw](https://github.com/zig-gamedev/zglfw), GLFW bindings for Zig
 
 ## Installation
 
