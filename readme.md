@@ -61,7 +61,7 @@ Everything is built from scratch — no third-party libs except Vulkan and GLFW.
 
 ## Project Structure
 
-output.txt
+structure.md
 
 ## Utils
 
