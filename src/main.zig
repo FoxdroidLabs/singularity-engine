@@ -12,7 +12,7 @@ pub fn main(init: std.process.Init) !void {
         \\  +----------------------------------+
         \\  |        SINGULARITY ENGINE        |
         \\  |        ------------------        |
-        \\  |             foxdroid             |
+        \\  |        Version: FV-A.0.1         |
         \\  +----------------------------------+
         \\
     ;
