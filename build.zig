@@ -22,6 +22,9 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
+    const nosubsystem = b.option(bool, "nosubsystem", "Hide console window (Windows only)") orelse false;
+    if (nosubsystem) exe.subsystem = .Windows;
+
     if (target.result.os.tag == .windows) {
         exe.root_module.addWin32ResourceFile(.{
             .file = b.path("assets/app.rc"),

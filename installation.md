@@ -25,7 +25,11 @@ cd singularity-engine
 ## Build
 
 ```sh
+For linux:
 zig build
+
+For windows:
+zig build -Dnosubsystem (The -Dnosubsystem remove the console log from when you launch the binary)
 ```
 
 ## Run
@@ -41,3 +45,4 @@ A setup script is available if needed:
 ```sh
 ./setup.sh
 ``
+```
