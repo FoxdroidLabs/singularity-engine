@@ -7,6 +7,7 @@ pub const VulkanSurface = @import("./vulkan/vk_surface.zig").VulkanSurface;
 pub const VulkanPhysicalDevice = @import("./vulkan/vk_physical_device.zig").VulkanPhysDevice;
 pub const VulkanLogDevice = @import("./vulkan/vk_logical_device.zig").VulkanLogDevice;
 pub const VulkanSwapchain = @import("./vulkan/vk_swapchain.zig").VulkanSwapchain;
+pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderpass;
 pub const Window = @import("./window/window.zig").Window;
 
 pub const Core = struct {
@@ -16,6 +17,7 @@ pub const Core = struct {
     vkphysdev: VulkanPhysicalDevice,
     vklogdev: VulkanLogDevice,
     vkswpc: VulkanSwapchain,
+    vkrp: VulkanRenderpass,
     window: Window,
 
     pub fn init() !Core {
@@ -32,6 +34,7 @@ pub const Core = struct {
         core.vklogdev = try VulkanLogDevice.init(core.vkc.instance, core.vkphysdev.handle, core.vks.surface, allocator);
         core.vklogdev.handle = vk.DeviceProxy.init(core.vklogdev.handle.handle, &core.vklogdev.vkd);
         core.vkswpc = try VulkanSwapchain.init(core.vkc.instance, core.vkphysdev.handle, &core.vklogdev.handle, core.vks.surface, core.window.handle, allocator);
+        core.vkrp = try VulkanRenderpass.init(&core.vklogdev.handle, core.vkswpc.image_format);
         core.window.setIcon();
         glfw.pollEvents();
 
@@ -41,6 +44,7 @@ pub const Core = struct {
 
     pub fn deinit(self: *Core) void {
         const allocator = self.gpa.allocator();
+        self.vkrp.deinit(&self.vklogdev.handle);
         self.vkswpc.deinit(self.vklogdev.handle, allocator);
         self.vklogdev.handle.destroyDevice(null);
         self.vks.deinit(self.vkc.instance);
