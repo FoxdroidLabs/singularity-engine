@@ -41,10 +41,12 @@ pub fn handshake(fd: ipc.Fd, allocator: std.mem.Allocator, app_id: []const u8) !
     );
     defer allocator.free(payload);
     try ipc.writeFrame(fd, 0, payload);
-    //var buf: [4096]u8 = undefined;
-    //const resp = try ipc.readFrame(fd, &buf);
-    //std.debug.print("handshake: {s}\n", .{resp});
-    //std.log.info("Discord RPC Initialised", .{});
+    var buf: [4096]u8 = undefined;
+    const resp = try ipc.readFrame(fd, &buf);
+    if (std.mem.indexOf(u8, resp, "READY") == null) {
+        return error.HandshakeFailed;
+    }
+    std.log.info("Discord RPC Initialised", .{});
 }
 
 pub fn setActivity(
@@ -59,8 +61,7 @@ pub fn setActivity(
     defer allocator.free(payload);
     std.debug.print("payload: {s}\n", .{payload});
     try ipc.writeFrame(fd, 1, payload);
-    //var buf: [4096]u8 = undefined;
-    //const resp = try ipc.readFrame(fd, &buf);
-    //std.debug.print("set_activity: {s}\n", .{resp});
-    std.log.info("Discord RPC initialised.", .{});
+    var buf: [4096]u8 = undefined;
+    const resp = try ipc.readFrame(fd, &buf);
+    std.debug.print("set_activity: {s}\n", .{resp});
 }

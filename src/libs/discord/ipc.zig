@@ -100,12 +100,14 @@ pub fn writeFrame(fd: Fd, opcode: u32, payload: []const u8) !void {
     switch (builtin.os.tag) {
         .windows => {
             var written: u32 = 0;
-            _ = WriteFile(fd, &header, 8, &written, null);
-            _ = WriteFile(fd, payload.ptr, @intCast(payload.len), &written, null);
+            if (WriteFile(fd, &header, 8, &written, null) == 0) return error.WriteFailed;
+            if (WriteFile(fd, payload.ptr, @intCast(payload.len), &written, null) == 0) return error.WriteFailed;
         },
         else => {
-            _ = std.os.linux.write(fd, &header, 8);
-            _ = std.os.linux.write(fd, payload.ptr, payload.len);
+            const r1 = std.os.linux.write(fd, &header, 8);
+            if (@as(isize, @bitCast(r1)) < 0) return error.WriteFailed;
+            const r2 = std.os.linux.write(fd, payload.ptr, payload.len);
+            if (@as(isize, @bitCast(r2)) < 0) return error.WriteFailed;
         },
     }
 }

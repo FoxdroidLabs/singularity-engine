@@ -6,11 +6,12 @@ pub const Client = struct {
     fd: ipc.Fd,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, app_id: []const u8) !Client {
+    pub fn init(allocator: std.mem.Allocator, app_id: []const u8, io: std.Io) !Client {
         var path_buf: [256]u8 = undefined;
         const path = try ipc.getSocketPath(&path_buf);
         const fd = try ipc.connect(path);
         try presence.handshake(fd, allocator, app_id);
+        try io.sleep(.fromNanoseconds(500 * std.time.ns_per_ms), .awake);
         return .{ .fd = fd, .allocator = allocator };
     }
 

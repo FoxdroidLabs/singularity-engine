@@ -18,8 +18,8 @@ pub fn main(init: std.process.Init) !void {
 
     var coreInit = try core.Core.init();
     defer coreInit.deinit();
-    
-    try libs.initLibs(init.gpa);
+
+    try libs.initLibs(init.gpa, init.io);
     defer libs.deinitLibs();
     // editor.initEditor();
 

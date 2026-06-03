@@ -4,14 +4,11 @@ pub const discord = @import("discord/discord.zig");
 
 var discord_client: ?discord.Client = null;
 
-pub fn initLibs(allocator: std.mem.Allocator) !void {
-    std.log.info("", .{});
+pub fn initLibs(allocator: std.mem.Allocator, io: std.Io) !void {
     // std.log.info("Singularity Libs: Libs Init Working", .{});
-    
-    discord_client = try discord.Client.init(allocator, "1393164834329202769");
-    try setActivity("Singularity Engine", "In dev");
+    discord_client = try discord.Client.init(allocator, "1393164834329202769", io);
+    try setActivity("In Development", "FV-A.0.0.1");
 }
-
 pub fn deinitLibs() void {
     if (discord_client) |*client| {
         client.deinit();
