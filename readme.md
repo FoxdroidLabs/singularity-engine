@@ -25,12 +25,12 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ### Rendering
 
-- [4/9] Vulkan bootstrap
+- [5/9] Vulkan bootstrap
   - [x] Instance & validation layers
   - [x] Physical & logical device
   - [x] Swapchain
   - [x] Render pass
-  - [ ] Framebuffers
+  - [x] Framebuffers
   - [ ] Graphics pipeline
   - [ ] Command pool & command buffers
   - [ ] Synchronization
