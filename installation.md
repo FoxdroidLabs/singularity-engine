@@ -40,9 +40,10 @@ zig build run-engine
 
 ## Setup
 
-A setup script is available if needed:
+A setup script for linux is available if needed:
+It add the engine to a specific folder (you can choose) and will create a .desktop file with the good icon
 
 ```sh
+chmod +x setup.sh
 ./setup.sh
-``
 ```
