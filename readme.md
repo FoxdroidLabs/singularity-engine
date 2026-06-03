@@ -25,11 +25,11 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ### Rendering
 
-- [3/9] Vulkan bootstrap
+- [4/9] Vulkan bootstrap
   - [x] Instance & validation layers
   - [x] Physical & logical device
   - [x] Swapchain
-  - [ ] Render pass
+  - [x] Render pass
   - [ ] Framebuffers
   - [ ] Graphics pipeline
   - [ ] Command pool & command buffers
@@ -61,7 +61,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ## Project Structure
 
-``structure.md``
+`structure.md`
 
 ## Utils
 
