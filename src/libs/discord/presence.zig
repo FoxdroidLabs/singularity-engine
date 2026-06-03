@@ -59,9 +59,9 @@ pub fn setActivity(
         \\{{"cmd":"SET_ACTIVITY","args":{{"pid":{d},"activity":{{"details":"{s}","state":"{s}","timestamps":{{"start":{d}}}}}}},"nonce":"1"}}
     , .{ getPid(), details, state, getTimestamp() });
     defer allocator.free(payload);
-    std.debug.print("payload: {s}\n", .{payload});
+    //std.debug.print("payload: {s}\n", .{payload});
     try ipc.writeFrame(fd, 1, payload);
-    var buf: [4096]u8 = undefined;
-    const resp = try ipc.readFrame(fd, &buf);
-    std.debug.print("set_activity: {s}\n", .{resp});
+    //var buf: [4096]u8 = undefined;
+    //const resp = try ipc.readFrame(fd, &buf);
+    //std.debug.print("set_activity: {s}\n", .{resp});
 }
