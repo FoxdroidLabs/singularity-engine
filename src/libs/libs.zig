@@ -10,7 +10,7 @@ pub fn initLibs(allocator: std.mem.Allocator, io: std.Io) !void {
     discord_client = try discord.Client.init(allocator, "1393164834329202769", io);
     if (discord_client != null) {
         discord_connected.store(true, .release);
-        try setActivity("In Development", "FV-A.0.0.1");
+        try setActivity("In Development", "FV-A.0.1");
     } else {
         (try std.Thread.spawn(.{}, discordRetryLoop, .{ allocator, io })).detach();
     }
@@ -22,7 +22,7 @@ fn discordRetryLoop(allocator: std.mem.Allocator, io: std.Io) void {
         const client = discord.Client.init(allocator, "1393164834329202769", io) catch continue orelse continue;
         discord_client = client;
         discord_connected.store(true, .release);
-        setActivity("In Development", "FV-A.0.0.1") catch {};
+        setActivity("In Development", "FV-A.0.1") catch {};
         return;
     }
 }
