@@ -7,6 +7,7 @@ pub const VulkanSwapchain = struct {
     images: []vk.Image,
     images_view: []vk.ImageView,
     image_format: vk.Format,
+    extent: vk.Extent2D,
 
     pub fn init(instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, surface: vk.SurfaceKHR, window: *glfw.Window, allocator: std.mem.Allocator) !VulkanSwapchain {
         var surfaceFormat_count: u32 = 0;
@@ -85,7 +86,7 @@ pub const VulkanSwapchain = struct {
             } }, null);
         }
         std.log.info("Vulkan Images created successfully.", .{});
-        return .{ .handle = swapchain, .images = images, .images_view = images_view, .image_format = chosen_format.format };
+        return .{ .handle = swapchain, .images = images, .images_view = images_view, .image_format = chosen_format.format, .extent = extent };
     }
     pub fn deinit(self: *VulkanSwapchain, logDevice: vk.DeviceProxy, allocator: std.mem.Allocator) void {
         for (self.images_view) |view| {

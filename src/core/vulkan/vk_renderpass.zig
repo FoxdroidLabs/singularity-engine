@@ -1,6 +1,5 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
-const glfw = @import("../core.zig").glfw;
 
 pub const VulkanRenderpass = struct {
     handle: vk.RenderPass,
