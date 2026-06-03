@@ -9,12 +9,14 @@ const engine = @import("engine");
 pub fn main(init: std.process.Init) !void {
     const title =
         \\
-        \\        SINGULARITY ENGINE
-        \\        ------------------
-        \\             foxdroid
+        \\  +----------------------------------+
+        \\  |        SINGULARITY ENGINE        |
+        \\  |        ------------------        |
+        \\  |             foxdroid             |
+        \\  +----------------------------------+
         \\
     ;
-    std.debug.print("{s}", .{title});
+    std.debug.print("{s}\n", .{title});
 
     var coreInit = try core.Core.init();
     defer coreInit.deinit();
