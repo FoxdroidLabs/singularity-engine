@@ -22,14 +22,14 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    const nosubsystem = b.option(bool, "nosubsystem", "Hide console window (Windows only)") orelse false;
-    if (nosubsystem) exe.subsystem = .Windows;
-    
-    const mkdir = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/shaders" });
+    const mkdir = b.addSystemCommand(switch (b.graph.host.result.os.tag) {
+        .windows => &.{ "cmd", "/c", "if not exist zig-out\\shaders mkdir zig-out\\shaders" },
+        else => &.{ "mkdir", "-p", "zig-out/shaders" },
+    });
     exe.step.dependOn(&mkdir.step);
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();
-    var shader_dir = cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true }) catch @panic("Cannot open shader dir");    
+    var shader_dir = cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true }) catch @panic("Cannot open shader dir");
     defer shader_dir.close(b.graph.io);
     var it = shader_dir.iterate();
     while (it.next(b.graph.io) catch @panic("Shader iterator error")) |entry| {
@@ -38,9 +38,11 @@ pub fn build(b: *std.Build) void {
         if (!std.mem.eql(u8, ext, ".vert") and
             !std.mem.eql(u8, ext, ".frag") and
             !std.mem.eql(u8, ext, ".comp")) continue;
-        const src = b.fmt("{s}/{s}", .{ shader_src_dir, entry.name });
-        const out = b.fmt("zig-out/shaders/{s}.spv", .{entry.name});
+        const sep = std.fs.path.sep_str;
+        const src = b.fmt("src{s}core{s}vulkan{s}shaders{s}{s}", .{ sep, sep, sep, sep, entry.name });
+        const out = b.fmt("zig-out{s}shaders{s}{s}.spv", .{ sep, sep, entry.name });
         const glslc = b.addSystemCommand(&.{ "glslc", src, "-o", out });
+        glslc.step.dependOn(&mkdir.step);
         exe.step.dependOn(&glslc.step);
     }
 
