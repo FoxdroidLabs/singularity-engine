@@ -5,6 +5,12 @@ var discord_client: ?discord.Client = null;
 var discord_connected: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 var discord_stop: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
+
+pub fn setActivity(details: []const u8, state: []const u8) !void {
+    if (!discord_connected.load(.acquire)) return;
+    if (discord_client) |*client| try client.setActivity(details, state);
+}
+
 pub fn initLibs(allocator: std.mem.Allocator, io: std.Io) !void {
     // std.log.info("Singularity Libs: Libs Init Working", .{});
     discord_client = try discord.Client.init(allocator, "1393164834329202769", io);
@@ -30,9 +36,4 @@ fn discordRetryLoop(allocator: std.mem.Allocator, io: std.Io) void {
 pub fn deinitLibs() void {
     discord_stop.store(true, .release);
     if (discord_client) |*client| client.deinit();
-}
-
-pub fn setActivity(details: []const u8, state: []const u8) !void {
-    if (!discord_connected.load(.acquire)) return;
-    if (discord_client) |*client| try client.setActivity(details, state);
 }
