@@ -52,7 +52,6 @@ pub fn build(b: *std.Build) void {
         });
     }
 
-    // Zig GLFW lib from zig-gamedev
     const zglfw = b.dependency("zglfw", .{
         .target = target,
         .optimize = optimize,
@@ -64,31 +63,26 @@ pub fn build(b: *std.Build) void {
     mod.addImport("zglfw", zglfw.module("root"));
     exe.root_module.linkLibrary(zglfw.artifact("glfw"));
 
-    // Vulkan registry from vulkan-zig by Snektron
     const vulkan = b.dependency("vulkan", .{
         .registry = b.path("registry/vk.xml"),
     }).module("vulkan-zig");
     exe.root_module.addImport("vulkan", vulkan);
     mod.addImport("vulkan", vulkan);
 
-    // Import the libs.zig file that will be used to init all internal libs
     const libs = b.addModule("libs", .{
         .root_source_file = b.path("src/libs/libs.zig"),
     });
     exe.root_module.addImport("libs", libs);
 
-    // Import the editor.zig for futur usage
     const editor = b.addModule("editor", .{
         .root_source_file = b.path("src/editor/editor.zig"),
     });
     exe.root_module.addImport("editor", editor);
 
-    // Import the system.zig for futur usage
     const engine = b.addModule("engine", .{
         .root_source_file = b.path("src/engine/system.zig"),
     });
 
-    // Import Modules in all folders
     libs.addImport("zglfw", zglfw.module("root"));
     editor.addImport("zglfw", zglfw.module("root"));
     engine.addImport("zglfw", zglfw.module("root"));
