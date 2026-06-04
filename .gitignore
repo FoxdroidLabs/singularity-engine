@@ -9,6 +9,7 @@
 !build.zig
 !build.zig.zon
 !setup.sh
+!setup.bat
 !.gitignore
 !readme.md
 !installation.md

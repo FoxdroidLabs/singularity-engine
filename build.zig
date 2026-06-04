@@ -24,6 +24,25 @@ pub fn build(b: *std.Build) void {
 
     const nosubsystem = b.option(bool, "nosubsystem", "Hide console window (Windows only)") orelse false;
     if (nosubsystem) exe.subsystem = .Windows;
+    
+    const mkdir = b.addSystemCommand(&.{ "mkdir", "-p", "zig-out/shaders" });
+    exe.step.dependOn(&mkdir.step);
+    const shader_src_dir = "src/core/vulkan/shaders";
+    const cwd = std.Io.Dir.cwd();
+    var shader_dir = cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true }) catch @panic("Cannot open shader dir");    
+    defer shader_dir.close(b.graph.io);
+    var it = shader_dir.iterate();
+    while (it.next(b.graph.io) catch @panic("Shader iterator error")) |entry| {
+        if (entry.kind != .file) continue;
+        const ext = std.fs.path.extension(entry.name);
+        if (!std.mem.eql(u8, ext, ".vert") and
+            !std.mem.eql(u8, ext, ".frag") and
+            !std.mem.eql(u8, ext, ".comp")) continue;
+        const src = b.fmt("{s}/{s}", .{ shader_src_dir, entry.name });
+        const out = b.fmt("zig-out/shaders/{s}.spv", .{entry.name});
+        const glslc = b.addSystemCommand(&.{ "glslc", src, "-o", out });
+        exe.step.dependOn(&glslc.step);
+    }
 
     if (target.result.os.tag == .windows) {
         exe.root_module.addWin32ResourceFile(.{
@@ -35,6 +54,7 @@ pub fn build(b: *std.Build) void {
     const zglfw = b.dependency("zglfw", .{
         .target = target,
         .optimize = optimize,
+        //.import_vulkan = true,
         .wayland = true,
         .x11 = true,
     });
