@@ -30,7 +30,7 @@ pub fn build(b: *std.Build) void {
     exe.step.dependOn(&mkdir.step);
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();
-    var shader_dir = cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true }) catch @panic("Cannot open shader dir");
+    var shader_dir = cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true }) catch @panic("Cannot open shader directory");
     defer shader_dir.close(b.graph.io);
     var it = shader_dir.iterate();
     while (it.next(b.graph.io) catch @panic("Shader iterator error")) |entry| {
