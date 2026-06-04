@@ -9,6 +9,7 @@ pub const VulkanLogDevice = @import("./vulkan/vk_logical_device.zig").VulkanLogD
 pub const VulkanSwapchain = @import("./vulkan/vk_swapchain.zig").VulkanSwapchain;
 pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderpass;
 pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFramebuffer;
+pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const Window = @import("./window/window.zig").Window;
 
 pub const Core = struct {
@@ -20,9 +21,10 @@ pub const Core = struct {
     vkswpc: VulkanSwapchain,
     vkrp: VulkanRenderpass,
     vkfb: VulkanFramebuffer,
+    vkgp: VulkanGraphicsPipeline,
     window: Window,
 
-    pub fn init() !Core {
+    pub fn init(io: std.Io) !Core {
         var core: Core = undefined;
         core.gpa = .{};
         const allocator = core.gpa.allocator();
@@ -38,6 +40,7 @@ pub const Core = struct {
         core.vkswpc = try VulkanSwapchain.init(core.vkc.instance, core.vkphysdev.handle, &core.vklogdev.handle, core.vks.surface, core.window.handle, allocator);
         core.vkrp = try VulkanRenderpass.init(&core.vklogdev.handle, core.vkswpc.image_format);
         core.vkfb = try VulkanFramebuffer.init(&core.vklogdev.handle, core.vkrp.handle, core.vkswpc.images_view, core.vkswpc.extent);
+        core.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogdev.handle, core.vkswpc.extent, core.vkrp.handle);
         core.window.setIcon();
         glfw.pollEvents();
 
@@ -47,6 +50,7 @@ pub const Core = struct {
 
     pub fn deinit(self: *Core) void {
         const allocator = self.gpa.allocator();
+        self.vkgp.deinit(&self.vklogdev.handle);
         self.vkfb.deinit(&self.vklogdev.handle);
         self.vkrp.deinit(&self.vklogdev.handle);
         self.vkswpc.deinit(self.vklogdev.handle, allocator);

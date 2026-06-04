@@ -26,6 +26,7 @@ pub fn build(b: *std.Build) void {
         .windows => &.{ "cmd", "/c", "if not exist zig-out\\shaders mkdir zig-out\\shaders" },
         else => &.{ "mkdir", "-p", "zig-out/shaders" },
     });
+    
     exe.step.dependOn(&mkdir.step);
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();

@@ -18,7 +18,7 @@ pub fn main(init: std.process.Init) !void {
     ;
     std.debug.print("{s}\n", .{title});
 
-    var coreInit = try core.Core.init();
+    var coreInit = try core.Core.init(init.io);
     defer coreInit.deinit();
 
     try libs.initLibs(init.gpa, init.io);
