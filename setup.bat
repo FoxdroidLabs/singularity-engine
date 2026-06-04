@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 set APP_NAME=singularity-engine
 set BINARY=singularity.exe
-set ICON=singularity.png
+set ICON=singularity.ico
 
 echo.
 echo   SINGULARITY ENGINE
@@ -16,12 +16,12 @@ echo   [1] C:\Program Files\singularity-engine  (system)
 echo   [2] %USERPROFILE%\AppData\Local\singularity-engine  (user)
 echo   [3] Custom path
 echo.
-set /p choice=  Choice [1-3]: 
+set /p choice=  Choice [1-3]:
 
 if "%choice%"=="1" set PREFIX=C:\Program Files\singularity-engine
 if "%choice%"=="2" set PREFIX=%USERPROFILE%\AppData\Local\singularity-engine
 if "%choice%"=="3" (
-    set /p PREFIX=  Enter path: 
+    set /p PREFIX=  Enter path:
 )
 
 if not defined PREFIX (
