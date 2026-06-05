@@ -25,7 +25,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ### Rendering
 
-- [8/9] Vulkan bootstrap
+- [9/9] Vulkan bootstrap
   - [x] Instance & validation layers
   - [x] Physical & logical device
   - [x] Swapchain
@@ -34,7 +34,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
   - [x] Graphics pipeline
   - [x] Command pool & command buffers
   - [x] Synchronization
-  - [ ] Draw loop
+  - [x] Draw loop
 - [ ] Vertex buffers & mesh loading
 - [ ] Camera & MVP matrices
 - [ ] Textures & depth buffer
