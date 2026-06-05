@@ -56,8 +56,23 @@ pub const Core = struct {
         return core;
     }
 
-    pub fn draw(self: *Core) !void {
-        try VulkanDraw.draw(
+    pub fn recreateSwapchain(self: *Core, io: std.Io) !void {
+        const allocator = self.gpa.allocator();
+        _ = self.vklogdev.handle.deviceWaitIdle() catch {};
+
+        self.vkcb.deinit(&self.vklogdev.handle);
+        self.vkfb.deinit(&self.vklogdev.handle);
+        self.vkgp.deinit(&self.vklogdev.handle);
+        self.vkswpc.deinit(self.vklogdev.handle, allocator);
+
+        self.vkswpc = try VulkanSwapchain.init(self.vkc.instance, self.vkphysdev.handle, &self.vklogdev.handle, self.vks.surface, self.window.handle, allocator);
+        self.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogdev.handle, self.vkswpc.extent, self.vkrp.handle);
+        self.vkfb = try VulkanFramebuffer.init(&self.vklogdev.handle, self.vkrp.handle, self.vkswpc.images_view, self.vkswpc.extent);
+        self.vkcb = try VulkanCommandBuffer.init(&self.vklogdev.handle, self.vkrp.handle, self.vkfb.handle, self.vkgp.pipeline, self.vkswpc.extent);
+    }
+
+    pub fn draw(self: *Core, io: std.Io) !void {
+        const needs_recreate = try VulkanDraw.draw(
             &self.vklogdev.handle,
             self.vkswpc.handle,
             self.vksc.image_available,
@@ -67,6 +82,7 @@ pub const Core = struct {
             self.vkcb.cmd_buf,
             self.vksc.in_flight,
         );
+        if (needs_recreate) try self.recreateSwapchain(io);
     }
 
     pub fn deinit(self: *Core) void {

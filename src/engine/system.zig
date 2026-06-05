@@ -8,6 +8,6 @@ pub fn initSystem(io: std.Io, window: *glfw.Window, c: *core) !void {
         glfw.pollEvents();
         if (window.shouldClose()) break;
         try tick.tick(io);
-        try c.draw();
+        try c.draw(io);
     }
 }
