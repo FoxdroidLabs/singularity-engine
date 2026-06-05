@@ -54,6 +54,9 @@ pub const Core = struct {
     }
 
     pub fn recreateSwapchain(self: *Core, io: std.Io) !void {
+        self.vklogdev.handle = vk.DeviceProxy.init(self.vklogdev.handle.handle, &self.vklogdev.vkd);
+        self.vkc.instance = vk.InstanceProxy.init(self.vkc.instance.handle, &self.vkc.vki);
+        self.vklogdev.handle = vk.DeviceProxy.init(self.vklogdev.handle.handle, &self.vklogdev.vkd);
         const allocator = self.gpa.allocator();
         _ = self.vklogdev.handle.deviceWaitIdle() catch {};
 
