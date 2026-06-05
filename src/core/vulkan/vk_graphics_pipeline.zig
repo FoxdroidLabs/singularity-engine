@@ -31,6 +31,14 @@ pub const VulkanGraphicsPipeline = struct {
         const frag_spv = try loadShader(io, allocator, frag_path);
         defer allocator.free(frag_spv);
 
+        std.log.info(
+            "Shader ptr = {x}, align mod 4 = {}",
+            .{
+                @intFromPtr(vert_spv.ptr),
+                @intFromPtr(vert_spv.ptr) % 4,
+            },
+        );
+
         const vert_module = try device.createShaderModule(&.{
             .code_size = vert_spv.len,
             .p_code = @ptrCast(vert_spv.ptr),
