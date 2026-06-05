@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
         .windows => &.{ "cmd", "/c", "if not exist zig-out\\shaders mkdir zig-out\\shaders" },
         else => &.{ "mkdir", "-p", "zig-out/shaders" },
     });
-    
+
     exe.step.dependOn(&mkdir.step);
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();
@@ -80,9 +80,14 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("editor", editor);
 
+    //const engine = b.addModule("engine", .{
+    //    .root_source_file = b.path("src/engine/system.zig"),
+    //});
+
     const engine = b.addModule("engine", .{
-        .root_source_file = b.path("src/engine/system.zig"),
+        .root_source_file = b.path("src/engine/engine.zig"),
     });
+    engine.addImport("singularity", mod);
 
     libs.addImport("zglfw", zglfw.module("root"));
     editor.addImport("zglfw", zglfw.module("root"));

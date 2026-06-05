@@ -25,6 +25,6 @@ pub fn main(init: std.process.Init) !void {
     defer libs.deinitLibs();
     // editor.initEditor();
 
-    try engine.initSystem(init.io, coreInit.window.handle);
+    try engine.system.initSystem(init.io, coreInit.window.handle, &coreInit);
     //try init.io.sleep(.fromNanoseconds(3 * std.time.ns_per_s), .awake);
 }

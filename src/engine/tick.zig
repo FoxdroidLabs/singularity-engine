@@ -1,24 +1,15 @@
 const std = @import("std");
-const glfw = @import("zglfw");
 const Io = std.Io;
 
-pub fn tick(io: Io, window: *glfw.Window) !void {
-    // Limit to 60 tick per seconds
+pub fn tick(io: Io) !void {
     const tps = 60;
     const ns_per_tick = std.time.ns_per_s / tps;
+    const start = Io.Clock.now(.awake, io);
 
-    // Create the tick Clock and check if the ns_per_tick is superior to elapsed_ns to prevent crash and cpu overload
-    while (true) {
-        const start = Io.Clock.now(.awake, io);
-        glfw.pollEvents();
-        if (window.shouldClose()) break;
-        // std.debug.print("Tick\n", .{});
+    // logic here
 
-        const elapsed = start.durationTo(Io.Clock.now(.awake, io));
-        const elapsed_ns = elapsed.toNanoseconds();
-        if (elapsed_ns < ns_per_tick) {
-            const remaining_ns = ns_per_tick - elapsed_ns;
-            try io.sleep(.fromNanoseconds(remaining_ns), .awake);
-        }
+    const elapsed_ns = start.durationTo(Io.Clock.now(.awake, io)).toNanoseconds();
+    if (elapsed_ns < ns_per_tick) {
+        try io.sleep(.fromNanoseconds(ns_per_tick - elapsed_ns), .awake);
     }
 }

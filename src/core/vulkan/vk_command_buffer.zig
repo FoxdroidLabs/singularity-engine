@@ -4,10 +4,10 @@ const vk = @import("../core.zig").vk;
 pub const VulkanCommandBuffer = struct {
     cmd_buf: vk.CommandBuffer,
     pool: vk.CommandPool,
-    
+
     pub fn init(logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, framebuffer: vk.Framebuffer, pipeline: vk.Pipeline, extent: vk.Extent2D) !VulkanCommandBuffer {
         const graphics_family: u32 = 0;
-        
+
         const pool = try logDevice.createCommandPool(&.{
             .queue_family_index = graphics_family,
             .flags = .{ .reset_command_buffer_bit = true },
@@ -33,7 +33,7 @@ pub const VulkanCommandBuffer = struct {
             },
             .clear_value_count = 1,
             .p_clear_values = &[_]vk.ClearValue{.{
-                .color = .{ .float_32 = .{ 0.0, 0.0, 0.0, 1.0 } },
+                .color = .{ .float_32 = .{ 1.0, 0.0, 0.0, 1.0 } },
             }},
         }, .@"inline");
 

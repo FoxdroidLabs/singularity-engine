@@ -12,6 +12,7 @@ pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFrame
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
 pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
+pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Window = @import("./window/window.zig").Window;
 
 pub const Core = struct {
@@ -26,6 +27,7 @@ pub const Core = struct {
     vkgp: VulkanGraphicsPipeline,
     vkcb: VulkanCommandBuffer,
     vksc: VulkanSync,
+    vkd: VulkanDraw,
     window: Window,
 
     pub fn init(io: std.Io) !Core {
@@ -52,6 +54,19 @@ pub const Core = struct {
 
         // std.log.info("Singularity Core: Core Init working", .{});
         return core;
+    }
+
+    pub fn draw(self: *Core) !void {
+        try VulkanDraw.draw(
+            &self.vklogdev.handle,
+            self.vkswpc.handle,
+            self.vksc.image_available,
+            self.vksc.render_finished,
+            self.vklogdev.present_queue,
+            self.vklogdev.graphics_queue,
+            self.vkcb.cmd_buf,
+            self.vksc.in_flight,
+        );
     }
 
     pub fn deinit(self: *Core) void {
