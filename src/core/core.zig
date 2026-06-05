@@ -11,6 +11,7 @@ pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderp
 pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFramebuffer;
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
+pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
 pub const Window = @import("./window/window.zig").Window;
 
 pub const Core = struct {
@@ -24,6 +25,7 @@ pub const Core = struct {
     vkfb: VulkanFramebuffer,
     vkgp: VulkanGraphicsPipeline,
     vkcb: VulkanCommandBuffer,
+    vksc: VulkanSync,
     window: Window,
 
     pub fn init(io: std.Io) !Core {
@@ -44,6 +46,7 @@ pub const Core = struct {
         core.vkfb = try VulkanFramebuffer.init(&core.vklogdev.handle, core.vkrp.handle, core.vkswpc.images_view, core.vkswpc.extent);
         core.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogdev.handle, core.vkswpc.extent, core.vkrp.handle);
         core.vkcb = try VulkanCommandBuffer.init(&core.vklogdev.handle, core.vkrp.handle, core.vkfb.handle, core.vkgp.pipeline, core.vkswpc.extent);
+        core.vksc = try VulkanSync.init(&core.vklogdev.handle);
         core.window.setIcon();
         glfw.pollEvents();
 
@@ -53,6 +56,7 @@ pub const Core = struct {
 
     pub fn deinit(self: *Core) void {
         const allocator = self.gpa.allocator();
+        self.vksc.deinit(&self.vklogdev.handle);
         self.vkcb.deinit(&self.vklogdev.handle);
         self.vkgp.deinit(&self.vklogdev.handle);
         self.vkfb.deinit(&self.vklogdev.handle);
@@ -66,5 +70,3 @@ pub const Core = struct {
         _ = self.gpa.deinit();
     }
 };
-
-

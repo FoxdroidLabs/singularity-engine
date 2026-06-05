@@ -25,7 +25,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ### Rendering
 
-- [7/9] Vulkan bootstrap
+- [8/9] Vulkan bootstrap
   - [x] Instance & validation layers
   - [x] Physical & logical device
   - [x] Swapchain
@@ -33,7 +33,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
   - [x] Framebuffers
   - [x] Graphics pipeline
   - [x] Command pool & command buffers
-  - [ ] Synchronization
+  - [x] Synchronization
   - [ ] Draw loop
 - [ ] Vertex buffers & mesh loading
 - [ ] Camera & MVP matrices
@@ -67,11 +67,11 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 # Count lines of Zig source (Linux only)
 
-find . -type f -name "*.zig" -not -path "*/.zig-cache/*" -not -path "*/zig-pkg/*" | xargs wc -l
+find . -type f -name "_.zig" -not -path "_/.zig-cache/_" -not -path "_/zig-pkg/\*" | xargs wc -l
 
 # Count chars of Zig source (Linux only)
 
-find . -type f -name "*.zig" -not -path "*/.zig-cache/*" -not -path "*/zig-pkg/*" | xargs wc -c
+find . -type f -name "_.zig" -not -path "_/.zig-cache/_" -not -path "_/zig-pkg/\*" | xargs wc -c
 
 ---
 
