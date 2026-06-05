@@ -102,7 +102,7 @@ pub const VulkanGraphicsPipeline = struct {
                 .depth_clamp_enable = .false,
                 .rasterizer_discard_enable = .false,
                 .polygon_mode = .fill,
-                .cull_mode = .{ .back_bit = true },
+                .cull_mode = .{},
                 .front_face = .clockwise,
                 .depth_bias_enable = .false,
                 .depth_bias_constant_factor = 0,

@@ -27,7 +27,6 @@ pub const Core = struct {
     vkgp: VulkanGraphicsPipeline,
     vkcb: VulkanCommandBuffer,
     vksc: VulkanSync,
-    vkd: VulkanDraw,
     window: Window,
 
     pub fn init(io: std.Io) !Core {
@@ -45,14 +44,12 @@ pub const Core = struct {
         core.vklogdev.handle = vk.DeviceProxy.init(core.vklogdev.handle.handle, &core.vklogdev.vkd);
         core.vkswpc = try VulkanSwapchain.init(core.vkc.instance, core.vkphysdev.handle, &core.vklogdev.handle, core.vks.surface, core.window.handle, allocator);
         core.vkrp = try VulkanRenderpass.init(&core.vklogdev.handle, core.vkswpc.image_format);
-        core.vkfb = try VulkanFramebuffer.init(&core.vklogdev.handle, core.vkrp.handle, core.vkswpc.images_view, core.vkswpc.extent);
+        core.vkfb = try VulkanFramebuffer.init(allocator, &core.vklogdev.handle, core.vkrp.handle, core.vkswpc.images_view, core.vkswpc.extent);
         core.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogdev.handle, core.vkswpc.extent, core.vkrp.handle);
-        core.vkcb = try VulkanCommandBuffer.init(&core.vklogdev.handle, core.vkrp.handle, core.vkfb.handle, core.vkgp.pipeline, core.vkswpc.extent);
+        core.vkcb = try VulkanCommandBuffer.init(&core.vklogdev.handle, core.vklogdev.graphics_family, core.vkrp.handle, core.vkgp.pipeline, core.vkswpc.extent);
         core.vksc = try VulkanSync.init(&core.vklogdev.handle);
         core.window.setIcon();
         glfw.pollEvents();
-
-        // std.log.info("Singularity Core: Core Init working", .{});
         return core;
     }
 
@@ -67,8 +64,8 @@ pub const Core = struct {
 
         self.vkswpc = try VulkanSwapchain.init(self.vkc.instance, self.vkphysdev.handle, &self.vklogdev.handle, self.vks.surface, self.window.handle, allocator);
         self.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogdev.handle, self.vkswpc.extent, self.vkrp.handle);
-        self.vkfb = try VulkanFramebuffer.init(&self.vklogdev.handle, self.vkrp.handle, self.vkswpc.images_view, self.vkswpc.extent);
-        self.vkcb = try VulkanCommandBuffer.init(&self.vklogdev.handle, self.vkrp.handle, self.vkfb.handle, self.vkgp.pipeline, self.vkswpc.extent);
+        self.vkfb = try VulkanFramebuffer.init(allocator, &self.vklogdev.handle, self.vkrp.handle, self.vkswpc.images_view, self.vkswpc.extent);
+        self.vkcb = try VulkanCommandBuffer.init(&self.vklogdev.handle, self.vklogdev.graphics_family, self.vkrp.handle, self.vkgp.pipeline, self.vkswpc.extent);
     }
 
     pub fn draw(self: *Core, io: std.Io) !void {
@@ -79,7 +76,8 @@ pub const Core = struct {
             self.vksc.render_finished,
             self.vklogdev.present_queue,
             self.vklogdev.graphics_queue,
-            self.vkcb.cmd_buf,
+            &self.vkcb,
+            self.vkfb.handles,
             self.vksc.in_flight,
         );
         if (needs_recreate) try self.recreateSwapchain(io);
@@ -87,6 +85,7 @@ pub const Core = struct {
 
     pub fn deinit(self: *Core) void {
         const allocator = self.gpa.allocator();
+        _ = self.vklogdev.handle.deviceWaitIdle() catch {};
         self.vksc.deinit(&self.vklogdev.handle);
         self.vkcb.deinit(&self.vklogdev.handle);
         self.vkgp.deinit(&self.vklogdev.handle);
