@@ -10,9 +10,9 @@ void main() {
     );
 
     vec3 colors[3] = vec3[](
-        vec3(1.0, 0.0, 0.0), // rouge
-        vec3(0.0, 1.0, 0.0), // vert
-        vec3(0.0, 0.0, 1.0)  // bleu
+        vec3(1.0, 0.0, 0.0), // Red
+        vec3(0.0, 1.0, 0.0), // Green 
+        vec3(0.0, 0.0, 1.0)  // Blue
     );
 
     gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
