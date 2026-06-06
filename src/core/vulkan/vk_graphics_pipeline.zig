@@ -1,6 +1,14 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 
+pub const PipelineConfig = struct {
+    shader_dir: []const u8 = "engine/shaders",
+    polygon_mode: vk.PolygonMode = .fill,
+    cull_mode: vk.CullModeFlags = .{},
+    front_face: vk.FrontFace = .clockwise,
+    topology: vk.PrimitiveTopology = .triangle_list,
+};
+
 pub const VulkanGraphicsPipeline = struct {
     pipeline: vk.Pipeline,
     layout: vk.PipelineLayout,
@@ -17,27 +25,19 @@ pub const VulkanGraphicsPipeline = struct {
         return buf;
     }
 
-    fn initShaderModules(io: std.Io, allocator: std.mem.Allocator, device: vk.DeviceProxy) !struct { vert: vk.ShaderModule, frag: vk.ShaderModule } {
+    fn initShaderModules(io: std.Io, allocator: std.mem.Allocator, device: vk.DeviceProxy, shader_dir: []const u8) !struct { vert: vk.ShaderModule, frag: vk.ShaderModule } {
         const exe_dir = try std.process.executableDirPathAlloc(io, allocator);
         defer allocator.free(exe_dir);
 
-        const vert_path = try std.fs.path.join(allocator, &.{ exe_dir, "engine", "shaders", "main.vert.spv" });
+        const vert_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, "main.vert.spv" });
         defer allocator.free(vert_path);
-        const frag_path = try std.fs.path.join(allocator, &.{ exe_dir, "engine", "shaders", "main.frag.spv" });
+        const frag_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, "main.frag.spv" });
         defer allocator.free(frag_path);
 
         const vert_spv = try loadShader(io, allocator, vert_path);
         defer allocator.free(vert_spv);
         const frag_spv = try loadShader(io, allocator, frag_path);
         defer allocator.free(frag_spv);
-
-        std.log.info(
-            "Shader ptr = {x}, align mod 4 = {}",
-            .{
-                @intFromPtr(vert_spv.ptr),
-                @intFromPtr(vert_spv.ptr) % 4,
-            },
-        );
 
         const vert_module = try device.createShaderModule(&.{
             .code_size = vert_spv.len,
@@ -53,8 +53,9 @@ pub const VulkanGraphicsPipeline = struct {
         return .{ .vert = vert_module, .frag = frag_module };
     }
 
-    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, extent: vk.Extent2D, render_pass: vk.RenderPass) !VulkanGraphicsPipeline {
-        const modules = try initShaderModules(io, allocator, logDevice.*);
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, extent: vk.Extent2D, render_pass: vk.RenderPass, config: PipelineConfig) !VulkanGraphicsPipeline {
+        std.log.info("Shader Stored in : {s}", .{config.shader_dir});
+        const modules = try initShaderModules(io, allocator, logDevice.*, config.shader_dir);
         defer logDevice.destroyShaderModule(modules.vert, null);
         defer logDevice.destroyShaderModule(modules.frag, null);
 
@@ -88,13 +89,14 @@ pub const VulkanGraphicsPipeline = struct {
                 .p_vertex_attribute_descriptions = undefined,
             },
             .p_input_assembly_state = &.{
-                .topology = .triangle_list,
+                .topology = config.topology,
                 .primitive_restart_enable = .false,
             },
             .p_viewport_state = &.{
                 .viewport_count = 1,
                 .p_viewports = &[_]vk.Viewport{.{
-                    .x = 0, .y = 0,
+                    .x = 0,
+                    .y = 0,
                     .width = @floatFromInt(extent.width),
                     .height = @floatFromInt(extent.height),
                     .min_depth = 0.0,
@@ -109,9 +111,9 @@ pub const VulkanGraphicsPipeline = struct {
             .p_rasterization_state = &.{
                 .depth_clamp_enable = .false,
                 .rasterizer_discard_enable = .false,
-                .polygon_mode = .fill,
-                .cull_mode = .{},
-                .front_face = .clockwise,
+                .polygon_mode = config.polygon_mode,
+                .cull_mode = config.cull_mode,
+                .front_face = config.front_face,
                 .depth_bias_enable = .false,
                 .depth_bias_constant_factor = 0,
                 .depth_bias_clamp = 0,
@@ -149,10 +151,9 @@ pub const VulkanGraphicsPipeline = struct {
             .base_pipeline_handle = .null_handle,
             .base_pipeline_index = -1,
         }}, null, &pipelines);
-        const pipeline = pipelines[0];
 
         std.log.info("Vulkan Graphics Pipeline created successfully.", .{});
-        return .{ .pipeline = pipeline, .layout = pipeline_layout };
+        return .{ .pipeline = pipelines[0], .layout = pipeline_layout };
     }
 
     pub fn deinit(self: *VulkanGraphicsPipeline, logDevice: *const vk.DeviceProxy) void {

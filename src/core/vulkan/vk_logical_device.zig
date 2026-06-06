@@ -1,7 +1,34 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
-const BaseWrapper = vk.BaseWrapper;
+
 const device_extension = [_][*:0]const u8{vk.extensions.khr_swapchain.name};
+
+const QueueFamilies = struct {
+    graphics: u32,
+    present: u32,
+};
+
+fn findQueueFamilies(instance: vk.InstanceProxy, device: vk.PhysicalDevice, surface: vk.SurfaceKHR, allocator: std.mem.Allocator) !QueueFamilies {
+    var count: u32 = 0;
+    instance.getPhysicalDeviceQueueFamilyProperties(device, &count, null);
+    const queues = try allocator.alloc(vk.QueueFamilyProperties, count);
+    defer allocator.free(queues);
+    instance.getPhysicalDeviceQueueFamilyProperties(device, &count, queues.ptr);
+
+    var graphics: ?u32 = null;
+    var present: ?u32 = null;
+    for (queues, 0..) |q, i| {
+        if (q.queue_flags.graphics_bit) graphics = @intCast(i);
+        const support = try instance.getPhysicalDeviceSurfaceSupportKHR(device, @intCast(i), surface);
+        if (support == .true) present = @intCast(i);
+        if (graphics != null and present != null) break;
+    }
+
+    return .{
+        .graphics = graphics orelse return error.NoGraphicsQueue,
+        .present = present orelse return error.NoPresentQueue,
+    };
+}
 
 pub const VulkanLogDevice = struct {
     vkd: vk.DeviceWrapper,
@@ -12,61 +39,44 @@ pub const VulkanLogDevice = struct {
     present_family: u32,
 
     pub fn init(instance: vk.InstanceProxy, device: vk.PhysicalDevice, surface: vk.SurfaceKHR, allocator: std.mem.Allocator) !VulkanLogDevice {
-        var logDevice_count: u32 = 0;
-        instance.getPhysicalDeviceQueueFamilyProperties(device, &logDevice_count, null);
-        const logDevices = try allocator.alloc(vk.QueueFamilyProperties, logDevice_count);
-        defer allocator.free(logDevices);
-        instance.getPhysicalDeviceQueueFamilyProperties(device, &logDevice_count, logDevices.ptr);
-
-        var graphics_family: ?u32 = null;
-        var present_family: ?u32 = null;
-        for (logDevices, 0..) |logDevice, i| {
-            if (logDevice.queue_flags.graphics_bit) {
-                graphics_family = @intCast(i);
-            }
-            const present_support = try instance.getPhysicalDeviceSurfaceSupportKHR(device, @intCast(i), surface);
-            if (present_support == .true) {
-                present_family = @intCast(i);
-            }
-            if (graphics_family != null and present_family != null) break;
-        }
+        const families = try findQueueFamilies(instance, device, surface, allocator);
 
         const priority = [_]f32{1};
-        const vkldqinfo = [_]vk.DeviceQueueCreateInfo{
+        const queue_infos = [_]vk.DeviceQueueCreateInfo{
             .{
-                .queue_family_index = graphics_family orelse return error.NoGraphicsQueue,
+                .queue_family_index = families.graphics,
                 .queue_count = 1,
                 .p_queue_priorities = &priority,
             },
             .{
-                .queue_family_index = present_family orelse return error.NoPresentQueue,
+                .queue_family_index = families.present,
                 .queue_count = 1,
                 .p_queue_priorities = &priority,
             },
         };
+        const queue_count: u32 = if (families.graphics == families.present) 1 else 2;
 
-        const queue_count: u32 = if (graphics_family == present_family) 1 else 2;
-        const vkldcinfo = vk.DeviceCreateInfo{
+        const device_info = vk.DeviceCreateInfo{
             .queue_create_info_count = queue_count,
-            .p_queue_create_infos = &vkldqinfo,
+            .p_queue_create_infos = &queue_infos,
             .enabled_extension_count = device_extension.len,
             .pp_enabled_extension_names = &device_extension,
         };
 
-        const vkldinfo = try instance.createDevice(device, &vkldcinfo, null);
+        const device_handle = try instance.createDevice(device, &device_info, null);
         std.log.info("Vulkan Logical Device created successfully.", .{});
 
         var self = VulkanLogDevice{
-            .vkd = vk.DeviceWrapper.load(vkldinfo, instance.wrapper.dispatch.vkGetDeviceProcAddr.?),
+            .vkd = vk.DeviceWrapper.load(device_handle, instance.wrapper.dispatch.vkGetDeviceProcAddr.?),
             .handle = undefined,
             .graphics_queue = undefined,
             .present_queue = undefined,
-            .graphics_family = graphics_family.?,
-            .present_family = present_family.?,
+            .graphics_family = families.graphics,
+            .present_family = families.present,
         };
-        self.handle = vk.DeviceProxy.init(vkldinfo, &self.vkd);
-        self.graphics_queue = self.handle.getDeviceQueue(graphics_family.?, 0);
-        self.present_queue = self.handle.getDeviceQueue(present_family.?, 0);
+        self.handle = vk.DeviceProxy.init(device_handle, &self.vkd);
+        self.graphics_queue = self.handle.getDeviceQueue(families.graphics, 0);
+        self.present_queue = self.handle.getDeviceQueue(families.present, 0);
         return self;
     }
 };

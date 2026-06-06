@@ -67,11 +67,11 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 # Count lines of Zig source (Linux only)
 
-find . -type f -name "_.zig" -not -path "_/.zig-cache/_" -not -path "_/zig-pkg/\*" | xargs wc -l
+find . -type f -name '*.zig' -not -path '*/.zig-cache/*' -not -path '*/zig-pkg/*' -print0 | xargs -0 wc -l
 
 # Count chars of Zig source (Linux only)
 
-find . -type f -name "_.zig" -not -path "_/.zig-cache/_" -not -path "_/zig-pkg/\*" | xargs wc -c
+find . -type f -name '*.zig' -not -path '*/.zig-cache/*' -not -path '*/zig-pkg/*' -print0 | xargs -0 wc -c
 
 ---
 

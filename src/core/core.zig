@@ -17,87 +17,90 @@ pub const Window = @import("./window/window.zig").Window;
 
 pub const Core = struct {
     gpa: std.heap.DebugAllocator(.{}),
-    vkc: VulkanContext,
-    vks: VulkanSurface,
-    vkphysdev: VulkanPhysicalDevice,
-    vklogdev: VulkanLogDevice,
-    vkswpc: VulkanSwapchain,
-    vkrp: VulkanRenderpass,
-    vkfb: VulkanFramebuffer,
-    vkgp: VulkanGraphicsPipeline,
-    vkcb: VulkanCommandBuffer,
-    vksc: VulkanSync,
+    vkcontext: VulkanContext,
+    vksurface: VulkanSurface,
+    vkphysicaldevice: VulkanPhysicalDevice,
+    vklogicaldevice: VulkanLogDevice,
+    vkswapchain: VulkanSwapchain,
+    vkrenderpass: VulkanRenderpass,
+    vkframebuffer: VulkanFramebuffer,
+    vkgraphicspipeline: VulkanGraphicsPipeline,
+    vkcommandbuffer: VulkanCommandBuffer,
+    vksync: VulkanSync,
     window: Window,
 
     pub fn init(io: std.Io) !Core {
+
+        // Vulkan & GLFW init
         var core: Core = undefined;
         core.gpa = .{};
         const allocator = core.gpa.allocator();
         try glfw.init();
 
-        core.vkc = try VulkanContext.init();
-        core.vkc.instance = vk.InstanceProxy.init(core.vkc.instance.handle, &core.vkc.vki);
+        core.vkcontext = try VulkanContext.init();
+        core.vkcontext.instance = vk.InstanceProxy.init(core.vkcontext.instance.handle, &core.vkcontext.vki);
         core.window = try Window.init();
-        core.vks = try VulkanSurface.init(core.vkc.instance.handle, core.window.handle);
-        core.vkphysdev = try VulkanPhysicalDevice.init(&core.vkc.instance, allocator);
-        core.vklogdev = try VulkanLogDevice.init(core.vkc.instance, core.vkphysdev.handle, core.vks.surface, allocator);
-        core.vklogdev.handle = vk.DeviceProxy.init(core.vklogdev.handle.handle, &core.vklogdev.vkd);
-        core.vkswpc = try VulkanSwapchain.init(core.vkc.instance, core.vkphysdev.handle, &core.vklogdev.handle, core.vks.surface, core.window.handle, allocator);
-        core.vkrp = try VulkanRenderpass.init(&core.vklogdev.handle, core.vkswpc.image_format);
-        core.vkfb = try VulkanFramebuffer.init(allocator, &core.vklogdev.handle, core.vkrp.handle, core.vkswpc.images_view, core.vkswpc.extent);
-        core.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogdev.handle, core.vkswpc.extent, core.vkrp.handle);
-        core.vkcb = try VulkanCommandBuffer.init(&core.vklogdev.handle, core.vklogdev.graphics_family, core.vkrp.handle, core.vkgp.pipeline, core.vkswpc.extent);
-        core.vksc = try VulkanSync.init(&core.vklogdev.handle);
+        core.vksurface = try VulkanSurface.init(core.vkcontext.instance.handle, core.window.handle);
+        core.vkphysicaldevice = try VulkanPhysicalDevice.init(&core.vkcontext.instance, allocator);
+        core.vklogicaldevice = try VulkanLogDevice.init(core.vkcontext.instance, core.vkphysicaldevice.handle, core.vksurface.surface, allocator);
+        core.vklogicaldevice.handle = vk.DeviceProxy.init(core.vklogicaldevice.handle.handle, &core.vklogicaldevice.vkd);
+        core.vkswapchain = try VulkanSwapchain.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, core.vksurface.surface, core.window.handle, allocator);
+        core.vkrenderpass = try VulkanRenderpass.init(&core.vklogicaldevice.handle, core.vkswapchain.image_format);
+        core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkswapchain.extent);
+        core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkswapchain.extent, core.vkrenderpass.handle, .{});
+        core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkswapchain.extent);
+        core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle);
+
         core.window.setIcon();
         glfw.pollEvents();
         return core;
     }
 
     pub fn recreateSwapchain(self: *Core, io: std.Io) !void {
-        self.vklogdev.handle = vk.DeviceProxy.init(self.vklogdev.handle.handle, &self.vklogdev.vkd);
-        self.vkc.instance = vk.InstanceProxy.init(self.vkc.instance.handle, &self.vkc.vki);
-        self.vklogdev.handle = vk.DeviceProxy.init(self.vklogdev.handle.handle, &self.vklogdev.vkd);
+        self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
+        self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
+        self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
         const allocator = self.gpa.allocator();
-        _ = self.vklogdev.handle.deviceWaitIdle() catch {};
+        _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
 
-        self.vkcb.deinit(&self.vklogdev.handle);
-        self.vkfb.deinit(&self.vklogdev.handle);
-        self.vkgp.deinit(&self.vklogdev.handle);
-        self.vkswpc.deinit(self.vklogdev.handle, allocator);
+        self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
+        self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
+        self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
+        self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
 
-        self.vkswpc = try VulkanSwapchain.init(self.vkc.instance, self.vkphysdev.handle, &self.vklogdev.handle, self.vks.surface, self.window.handle, allocator);
-        self.vkgp = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogdev.handle, self.vkswpc.extent, self.vkrp.handle);
-        self.vkfb = try VulkanFramebuffer.init(allocator, &self.vklogdev.handle, self.vkrp.handle, self.vkswpc.images_view, self.vkswpc.extent);
-        self.vkcb = try VulkanCommandBuffer.init(&self.vklogdev.handle, self.vklogdev.graphics_family, self.vkrp.handle, self.vkgp.pipeline, self.vkswpc.extent);
+        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
+        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkrenderpass.handle, .{});
+        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkswapchain.extent);
+        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkswapchain.extent);
     }
 
     pub fn draw(self: *Core, io: std.Io) !void {
         const needs_recreate = try VulkanDraw.draw(
-            &self.vklogdev.handle,
-            self.vkswpc.handle,
-            self.vksc.image_available,
-            self.vksc.render_finished,
-            self.vklogdev.present_queue,
-            self.vklogdev.graphics_queue,
-            &self.vkcb,
-            self.vkfb.handles,
-            self.vksc.in_flight,
+            &self.vklogicaldevice.handle,
+            self.vkswapchain.handle,
+            self.vksync.image_available,
+            self.vksync.render_finished,
+            self.vklogicaldevice.present_queue,
+            self.vklogicaldevice.graphics_queue,
+            &self.vkcommandbuffer,
+            self.vkframebuffer.handles,
+            self.vksync.in_flight,
         );
         if (needs_recreate) try self.recreateSwapchain(io);
     }
 
     pub fn deinit(self: *Core) void {
         const allocator = self.gpa.allocator();
-        _ = self.vklogdev.handle.deviceWaitIdle() catch {};
-        self.vksc.deinit(&self.vklogdev.handle);
-        self.vkcb.deinit(&self.vklogdev.handle);
-        self.vkgp.deinit(&self.vklogdev.handle);
-        self.vkfb.deinit(&self.vklogdev.handle);
-        self.vkrp.deinit(&self.vklogdev.handle);
-        self.vkswpc.deinit(self.vklogdev.handle, allocator);
-        self.vklogdev.handle.destroyDevice(null);
-        self.vks.deinit(self.vkc.instance);
-        self.vkc.deinit();
+        _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
+        self.vksync.deinit(&self.vklogicaldevice.handle);
+        self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
+        self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
+        self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
+        self.vkrenderpass.deinit(&self.vklogicaldevice.handle);
+        self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
+        self.vklogicaldevice.handle.destroyDevice(null);
+        self.vksurface.deinit(self.vkcontext.instance);
+        self.vkcontext.deinit();
         self.window.deinit();
         glfw.terminate();
         _ = self.gpa.deinit();
