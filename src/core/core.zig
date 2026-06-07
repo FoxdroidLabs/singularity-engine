@@ -30,8 +30,6 @@ pub const Core = struct {
     window: Window,
 
     pub fn init(io: std.Io) !Core {
-
-        // Vulkan & GLFW init
         var core: Core = undefined;
         core.gpa = .{};
         const allocator = core.gpa.allocator();
@@ -66,9 +64,11 @@ pub const Core = struct {
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
+        self.vksync.deinit(&self.vklogicaldevice.handle);
         self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
 
         self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
+        self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, .{});
         self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkswapchain.extent);
         self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
@@ -86,13 +86,11 @@ pub const Core = struct {
         const needs_recreate = try VulkanDraw.draw(
             &self.vklogicaldevice.handle,
             self.vkswapchain.handle,
-            self.vksync.image_available,
-            self.vksync.render_finished,
+            &self.vksync,
             self.vklogicaldevice.present_queue,
             self.vklogicaldevice.graphics_queue,
             &self.vkcommandbuffer,
             self.vkframebuffer.handles,
-            self.vksync.in_flight,
         );
         if (needs_recreate) try self.recreateSwapchain(io);
     }
