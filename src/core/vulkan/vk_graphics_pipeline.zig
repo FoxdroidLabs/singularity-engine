@@ -3,6 +3,7 @@ const vk = @import("../core.zig").vk;
 
 pub const PipelineConfig = struct {
     shader_dir: []const u8 = "engine/shaders",
+    shader_name: []const u8 = "main",
     polygon_mode: vk.PolygonMode = .fill,
     cull_mode: vk.CullModeFlags = .{},
     front_face: vk.FrontFace = .clockwise,
@@ -25,13 +26,18 @@ pub const VulkanGraphicsPipeline = struct {
         return buf;
     }
 
-    fn initShaderModules(io: std.Io, allocator: std.mem.Allocator, device: vk.DeviceProxy, shader_dir: []const u8) !struct { vert: vk.ShaderModule, frag: vk.ShaderModule } {
+    fn initShaderModules(io: std.Io, allocator: std.mem.Allocator, device: vk.DeviceProxy, shader_dir: []const u8, shader_name: []const u8) !struct { vert: vk.ShaderModule, frag: vk.ShaderModule } {
         const exe_dir = try std.process.executableDirPathAlloc(io, allocator);
         defer allocator.free(exe_dir);
 
-        const vert_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, "main.vert.spv" });
+        const vert_name = try std.fmt.allocPrint(allocator, "{s}.vert.spv", .{shader_name});
+        defer allocator.free(vert_name);
+        const frag_name = try std.fmt.allocPrint(allocator, "{s}.frag.spv", .{shader_name});
+        defer allocator.free(frag_name);
+
+        const vert_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, vert_name });
         defer allocator.free(vert_path);
-        const frag_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, "main.frag.spv" });
+        const frag_path = try std.fs.path.join(allocator, &.{ exe_dir, shader_dir, frag_name });
         defer allocator.free(frag_path);
 
         const vert_spv = try loadShader(io, allocator, vert_path);
@@ -53,17 +59,23 @@ pub const VulkanGraphicsPipeline = struct {
         return .{ .vert = vert_module, .frag = frag_module };
     }
 
-    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, extent: vk.Extent2D, render_pass: vk.RenderPass, config: PipelineConfig) !VulkanGraphicsPipeline {
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, config: PipelineConfig) !VulkanGraphicsPipeline {
         std.log.info("Shader Stored in : {s}", .{config.shader_dir});
-        const modules = try initShaderModules(io, allocator, logDevice.*, config.shader_dir);
+        const modules = try initShaderModules(io, allocator, logDevice.*, config.shader_dir, config.shader_name);
         defer logDevice.destroyShaderModule(modules.vert, null);
         defer logDevice.destroyShaderModule(modules.frag, null);
+
+        const push_constant_range = vk.PushConstantRange{
+            .stage_flags = .{ .vertex_bit = true },
+            .offset = 0,
+            .size = @sizeOf(f32),
+        };
 
         const pipeline_layout = try logDevice.createPipelineLayout(&.{
             .set_layout_count = 0,
             .p_set_layouts = undefined,
-            .push_constant_range_count = 0,
-            .p_push_constant_ranges = undefined,
+            .push_constant_range_count = 1,
+            .p_push_constant_ranges = @ptrCast(&push_constant_range),
         }, null);
         errdefer logDevice.destroyPipelineLayout(pipeline_layout, null);
 
@@ -94,19 +106,9 @@ pub const VulkanGraphicsPipeline = struct {
             },
             .p_viewport_state = &.{
                 .viewport_count = 1,
-                .p_viewports = &[_]vk.Viewport{.{
-                    .x = 0,
-                    .y = 0,
-                    .width = @floatFromInt(extent.width),
-                    .height = @floatFromInt(extent.height),
-                    .min_depth = 0.0,
-                    .max_depth = 1.0,
-                }},
+                .p_viewports = undefined,
                 .scissor_count = 1,
-                .p_scissors = &[_]vk.Rect2D{.{
-                    .offset = .{ .x = 0, .y = 0 },
-                    .extent = extent,
-                }},
+                .p_scissors = undefined,
             },
             .p_rasterization_state = &.{
                 .depth_clamp_enable = .false,
@@ -144,7 +146,10 @@ pub const VulkanGraphicsPipeline = struct {
                 }},
                 .blend_constants = .{ 0, 0, 0, 0 },
             },
-            .p_dynamic_state = null,
+            .p_dynamic_state = &.{
+                .dynamic_state_count = 2,
+                .p_dynamic_states = &[_]vk.DynamicState{ .viewport, .scissor },
+            },
             .layout = pipeline_layout,
             .render_pass = render_pass,
             .subpass = 0,

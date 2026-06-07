@@ -47,8 +47,8 @@ pub const Core = struct {
         core.vkswapchain = try VulkanSwapchain.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, core.vksurface.surface, core.window.handle, allocator);
         core.vkrenderpass = try VulkanRenderpass.init(&core.vklogicaldevice.handle, core.vkswapchain.image_format);
         core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkswapchain.extent);
-        core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkswapchain.extent, core.vkrenderpass.handle, .{});
-        core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkswapchain.extent);
+        core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, .{});
+        core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkgraphicspipeline.layout, core.vkswapchain.extent);
         core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle);
 
         core.window.setIcon();
@@ -69,12 +69,20 @@ pub const Core = struct {
         self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
 
         self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
-        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkrenderpass.handle, .{});
+        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, .{});
         self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkswapchain.extent);
-        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkswapchain.extent);
+        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
     }
 
     pub fn draw(self: *Core, io: std.Io) !void {
+        const fb_size = self.window.handle.getFramebufferSize();
+        const fb_w: u32 = @intCast(fb_size[0]);
+        const fb_h: u32 = @intCast(fb_size[1]);
+        if (fb_w != self.vkswapchain.extent.width or fb_h != self.vkswapchain.extent.height) {
+            try self.recreateSwapchain(io);
+            return;
+        }
+
         const needs_recreate = try VulkanDraw.draw(
             &self.vklogicaldevice.handle,
             self.vkswapchain.handle,
