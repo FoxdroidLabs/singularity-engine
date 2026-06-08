@@ -16,7 +16,6 @@ pub const VulkanDraw = struct {
         framebuffers: []vk.Framebuffer,
     ) !bool {
         const frame = sync.current_frame;
-
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
 
         const result = logDevice.acquireNextImageKHR(
@@ -31,7 +30,7 @@ pub const VulkanDraw = struct {
         const image_index = result.image_index;
 
         try logDevice.resetFences(@ptrCast(&sync.in_flight[frame]));
-        try cmd_buf.record(logDevice, framebuffers[image_index]);
+        try cmd_buf.record(logDevice, framebuffers[image_index], frame);
 
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };
         try logDevice.queueSubmit(graphics_queue, &[_]vk.SubmitInfo{.{
@@ -39,14 +38,14 @@ pub const VulkanDraw = struct {
             .p_wait_semaphores = @ptrCast(&sync.image_available[frame]),
             .p_wait_dst_stage_mask = @ptrCast(&wait_stage),
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast(&cmd_buf.cmd_buf),
+            .p_command_buffers = @ptrCast(&cmd_buf.cmd_bufs[frame]),
             .signal_semaphore_count = 1,
-            .p_signal_semaphores = @ptrCast(&sync.render_finished[frame]),
+            .p_signal_semaphores = @ptrCast(&sync.render_finished[image_index]),
         }}, sync.in_flight[frame]);
 
         _ = logDevice.queuePresentKHR(present_queue, &.{
             .wait_semaphore_count = 1,
-            .p_wait_semaphores = @ptrCast(&sync.render_finished[frame]),
+            .p_wait_semaphores = @ptrCast(&sync.render_finished[image_index]),
             .swapchain_count = 1,
             .p_swapchains = @ptrCast(&swapchain),
             .p_image_indices = @ptrCast(&image_index),
@@ -56,7 +55,6 @@ pub const VulkanDraw = struct {
         };
 
         sync.current_frame = (sync.current_frame + 1) % @import("./vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
-
         if (first_draw) {
             std.log.info("Vulkan Draw Successful.", .{});
             first_draw = false;
