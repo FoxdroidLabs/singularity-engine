@@ -60,7 +60,7 @@ pub const VulkanGraphicsPipeline = struct {
         return .{ .vert = vert_module, .frag = frag_module };
     }
 
-    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, config: PipelineConfig) !VulkanGraphicsPipeline {
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, descriptor_set_layout: vk.DescriptorSetLayout, config: PipelineConfig) !VulkanGraphicsPipeline {
         std.log.info("Shader Stored in : {s}", .{config.shader_dir});
         const modules = try initShaderModules(io, allocator, logDevice.*, config.shader_dir, config.shader_name);
         defer logDevice.destroyShaderModule(modules.vert, null);
@@ -73,8 +73,8 @@ pub const VulkanGraphicsPipeline = struct {
         };
 
         const pipeline_layout = try logDevice.createPipelineLayout(&.{
-            .set_layout_count = 0,
-            .p_set_layouts = undefined,
+            .set_layout_count = 1,
+            .p_set_layouts = @ptrCast(&descriptor_set_layout),
             .push_constant_range_count = 1,
             .p_push_constant_ranges = @ptrCast(&push_constant_range),
         }, null);

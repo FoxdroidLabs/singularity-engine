@@ -2,7 +2,7 @@ const std = @import("std");
 const vk = @import("../core.zig").vk;
 const findMemoryType = @import("vk_vertex_buffer.zig").findMemoryType;
 
-const UBO = struct {
+pub const UBO = struct {
     model: [4][4]f32,
     view: [4][4]f32,
     proj: [4][4]f32,
