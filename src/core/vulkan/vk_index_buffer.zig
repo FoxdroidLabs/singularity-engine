@@ -45,6 +45,6 @@ pub const VulkanIndexBuffer = struct {
     pub fn deinit(self: *VulkanIndexBuffer, logDevice: *const vk.DeviceProxy) void {
         logDevice.destroyBuffer(self.buffer, null);
         logDevice.freeMemory(self.memory, null);
-        std.log.info("Vulkan Vertex Buffer Destroyed.", .{});
+        std.log.info("Vulkan Index Buffer Destroyed.", .{});
     }
 };
