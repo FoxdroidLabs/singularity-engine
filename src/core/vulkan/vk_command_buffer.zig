@@ -59,7 +59,8 @@ pub const VulkanCommandBuffer = struct {
         const aspect_ratio: f32 = @as(f32, @floatFromInt(self.extent.width)) / @as(f32, @floatFromInt(self.extent.height));
         logDevice.cmdPushConstants(cmd, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(f32), @ptrCast(&aspect_ratio));
         logDevice.cmdBindVertexBuffers(cmd, 0, &[_]vk.Buffer{vertex_buffer.buffer}, &[_]vk.DeviceSize{0});
-        logDevice.cmdBindDescriptorSets(cmd, .graphics, self.pipeline_layout, 0, &[_]vk.DescriptorSet{descriptor.sets[frame]}, &[_]u32{});        logDevice.cmdDraw(cmd, vertex_buffer.count, 1, 0, 0);
+        logDevice.cmdBindDescriptorSets(cmd, .graphics, self.pipeline_layout, 0, &[_]vk.DescriptorSet{descriptor.sets[frame]}, &[_]u32{});        
+        logDevice.cmdDraw(cmd, vertex_buffer.count, 1, 0, 0);
         logDevice.cmdEndRenderPass(cmd);
         try logDevice.endCommandBuffer(cmd);
     }
