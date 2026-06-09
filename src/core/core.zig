@@ -33,7 +33,7 @@ pub const Core = struct {
 
     pub fn init(io: std.Io) !Core {
 
-        // Hardcoded Cube for test
+        // Hardcoded Value for test
         const vertices = [_]VulkanVertexBuffer.Vertex{
             .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
             .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
