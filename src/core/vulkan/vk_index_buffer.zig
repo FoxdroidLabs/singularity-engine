@@ -1,7 +1,7 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 
-const findMemoryType = @import("vk_vertex_buffer.zig").findMemoryType; // ou duplique si pas exportée
+const findMemoryType = @import("vk_vertex_buffer.zig").findMemoryType;
 
 pub const VulkanIndexBuffer = struct {
     buffer: vk.Buffer,
