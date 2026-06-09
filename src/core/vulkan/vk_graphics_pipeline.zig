@@ -1,5 +1,6 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
+const vb = @import("./vk_vertex_buffer.zig");
 
 pub const PipelineConfig = struct {
     shader_dir: []const u8 = "engine/shaders",
@@ -95,10 +96,10 @@ pub const VulkanGraphicsPipeline = struct {
                 },
             },
             .p_vertex_input_state = &.{
-                .vertex_binding_description_count = 0,
-                .p_vertex_binding_descriptions = undefined,
-                .vertex_attribute_description_count = 0,
-                .p_vertex_attribute_descriptions = undefined,
+                .vertex_binding_description_count = 1,
+                .p_vertex_binding_descriptions = @ptrCast(&vb.VulkanVertexBuffer.binding),
+                .vertex_attribute_description_count = vb.VulkanVertexBuffer.attributes.len,
+                .p_vertex_attribute_descriptions = &vb.VulkanVertexBuffer.attributes,
             },
             .p_input_assembly_state = &.{
                 .topology = config.topology,

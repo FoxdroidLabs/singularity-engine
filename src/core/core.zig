@@ -11,6 +11,7 @@ pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderp
 pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFramebuffer;
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
+pub const VulkanVertexBuffer = @import("./vulkan/vk_vertex_buffer.zig").VulkanVertexBuffer;
 pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
 pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Window = @import("./window/window.zig").Window;
@@ -26,10 +27,19 @@ pub const Core = struct {
     vkframebuffer: VulkanFramebuffer,
     vkgraphicspipeline: VulkanGraphicsPipeline,
     vkcommandbuffer: VulkanCommandBuffer,
+    vkvertexbuffer: VulkanVertexBuffer,
     vksync: VulkanSync,
     window: Window,
 
     pub fn init(io: std.Io) !Core {
+
+        // Hardcoded Cube for test
+        const vertices = [_]VulkanVertexBuffer.Vertex{
+            .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
+            .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
+            .{ .pos = .{ -0.5, 0.5, 0.0 }, .color = .{ 0.0, 0.0, 1.0 } },
+        };
+
         var core: Core = undefined;
         core.gpa = .{};
         const allocator = core.gpa.allocator();
@@ -47,6 +57,7 @@ pub const Core = struct {
         core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkswapchain.extent);
         core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, .{});
         core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkgraphicspipeline.layout, core.vkswapchain.extent);
+        core.vkvertexbuffer = try VulkanVertexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &vertices);
         core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle, allocator, core.vkswapchain.images_view.len);
 
         core.window.setIcon();
@@ -91,6 +102,7 @@ pub const Core = struct {
             self.vklogicaldevice.graphics_queue,
             &self.vkcommandbuffer,
             self.vkframebuffer.handles,
+            &self.vkvertexbuffer,
         );
         if (needs_recreate) try self.recreateSwapchain(io);
     }
@@ -99,6 +111,7 @@ pub const Core = struct {
         const allocator = self.gpa.allocator();
         _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
         self.vksync.deinit(&self.vklogicaldevice.handle);
+        self.vkvertexbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
         self.vkframebuffer.deinit(&self.vklogicaldevice.handle);

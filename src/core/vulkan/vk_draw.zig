@@ -2,6 +2,7 @@ const std = @import("std");
 const vk = @import("../core.zig").vk;
 const VulkanCommandBuffer = @import("./vk_command_buffer.zig").VulkanCommandBuffer;
 const VulkanSync = @import("./vk_sync.zig").VulkanSync;
+const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
 
 pub const VulkanDraw = struct {
     var first_draw = true;
@@ -14,6 +15,7 @@ pub const VulkanDraw = struct {
         graphics_queue: vk.Queue,
         cmd_buf: *VulkanCommandBuffer,
         framebuffers: []vk.Framebuffer,
+        vertex_buffer: *VulkanVertexBuffer,
     ) !bool {
         const frame = sync.current_frame;
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
@@ -30,7 +32,7 @@ pub const VulkanDraw = struct {
         const image_index = result.image_index;
 
         try logDevice.resetFences(@ptrCast(&sync.in_flight[frame]));
-        try cmd_buf.record(logDevice, framebuffers[image_index], frame);
+        try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer);
 
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };
         try logDevice.queueSubmit(graphics_queue, &[_]vk.SubmitInfo{.{

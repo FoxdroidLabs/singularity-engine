@@ -1,6 +1,7 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 const MAX_FRAMES_IN_FLIGHT = @import("./vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
+const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
 
 pub const VulkanCommandBuffer = struct {
     cmd_bufs: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer,
@@ -15,19 +16,17 @@ pub const VulkanCommandBuffer = struct {
             .queue_family_index = graphics_family,
             .flags = .{ .reset_command_buffer_bit = true },
         }, null);
-
         var cmd_bufs: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer = undefined;
         try logDevice.allocateCommandBuffers(&.{
             .command_pool = pool,
             .level = .primary,
             .command_buffer_count = MAX_FRAMES_IN_FLIGHT,
         }, @ptrCast(&cmd_bufs));
-
         std.log.info("Vulkan Command Buffer created successfully.", .{});
         return .{ .cmd_bufs = cmd_bufs, .pool = pool, .render_pass = render_pass, .pipeline = pipeline, .pipeline_layout = pipeline_layout, .extent = extent };
     }
 
-    pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize) !void {
+    pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize, vertex_buffer: *VulkanVertexBuffer) !void {
         const cmd = self.cmd_bufs[frame];
         try logDevice.resetCommandBuffer(cmd, .{});
         try logDevice.beginCommandBuffer(cmd, &.{ .flags = .{} });
@@ -58,7 +57,8 @@ pub const VulkanCommandBuffer = struct {
         }});
         const aspect_ratio: f32 = @as(f32, @floatFromInt(self.extent.width)) / @as(f32, @floatFromInt(self.extent.height));
         logDevice.cmdPushConstants(cmd, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(f32), @ptrCast(&aspect_ratio));
-        logDevice.cmdDraw(cmd, 3, 1, 0, 0);
+        logDevice.cmdBindVertexBuffers(cmd, 0, &[_]vk.Buffer{vertex_buffer.buffer}, &[_]vk.DeviceSize{0});
+        logDevice.cmdDraw(cmd, vertex_buffer.count, 1, 0, 0);
         logDevice.cmdEndRenderPass(cmd);
         try logDevice.endCommandBuffer(cmd);
     }
