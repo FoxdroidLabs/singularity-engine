@@ -1,7 +1,7 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 
-fn findMemoryType(
+pub fn findMemoryType(
     instance: vk.InstanceProxy,
     device: vk.PhysicalDevice,
     type_filter: u32,

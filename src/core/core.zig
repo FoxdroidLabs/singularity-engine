@@ -12,6 +12,7 @@ pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFrame
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
 pub const VulkanVertexBuffer = @import("./vulkan/vk_vertex_buffer.zig").VulkanVertexBuffer;
+pub const VulkanIndexBuffer = @import("./vulkan/vk_index_buffer.zig").VulkanIndexBuffer;
 pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
 pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Window = @import("./window/window.zig").Window;
@@ -28,6 +29,7 @@ pub const Core = struct {
     vkgraphicspipeline: VulkanGraphicsPipeline,
     vkcommandbuffer: VulkanCommandBuffer,
     vkvertexbuffer: VulkanVertexBuffer,
+    vkindexbuffer: VulkanIndexBuffer,
     vksync: VulkanSync,
     window: Window,
 
@@ -39,6 +41,7 @@ pub const Core = struct {
             .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
             .{ .pos = .{ -0.5, 0.5, 0.0 }, .color = .{ 0.0, 0.0, 1.0 } },
         };
+        const indices = [_]u16{ 0, 1, 2, 2, 3, 0 };
 
         var core: Core = undefined;
         core.gpa = .{};
@@ -58,6 +61,7 @@ pub const Core = struct {
         core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, .{});
         core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkgraphicspipeline.layout, core.vkswapchain.extent);
         core.vkvertexbuffer = try VulkanVertexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &vertices);
+        core.vkindexbuffer = try VulkanIndexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &indices);
         core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle, allocator, core.vkswapchain.images_view.len);
 
         core.window.setIcon();
@@ -111,6 +115,7 @@ pub const Core = struct {
         const allocator = self.gpa.allocator();
         _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
         self.vksync.deinit(&self.vklogicaldevice.handle);
+        self.vkindexbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkvertexbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);

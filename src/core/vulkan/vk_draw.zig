@@ -40,7 +40,7 @@ pub const VulkanDraw = struct {
             .p_wait_semaphores = @ptrCast(&sync.image_available[frame]),
             .p_wait_dst_stage_mask = @ptrCast(&wait_stage),
             .command_buffer_count = 1,
-            .p_command_buffers = @ptrCast(&cmd_buf.cmd_bufs[frame]),
+            .p_command_buffers = @ptrCast(&cmd_buf.cmd_buf[frame]),
             .signal_semaphore_count = 1,
             .p_signal_semaphores = @ptrCast(&sync.render_finished[image_index]),
         }}, sync.in_flight[frame]);

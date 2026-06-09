@@ -4,7 +4,7 @@ const MAX_FRAMES_IN_FLIGHT = @import("./vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
 const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
 
 pub const VulkanCommandBuffer = struct {
-    cmd_bufs: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer,
+    cmd_buf: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer,
     pool: vk.CommandPool,
     render_pass: vk.RenderPass,
     pipeline: vk.Pipeline,
@@ -16,18 +16,18 @@ pub const VulkanCommandBuffer = struct {
             .queue_family_index = graphics_family,
             .flags = .{ .reset_command_buffer_bit = true },
         }, null);
-        var cmd_bufs: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer = undefined;
+        var cmd_buf: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer = undefined;
         try logDevice.allocateCommandBuffers(&.{
             .command_pool = pool,
             .level = .primary,
             .command_buffer_count = MAX_FRAMES_IN_FLIGHT,
-        }, @ptrCast(&cmd_bufs));
+        }, @ptrCast(&cmd_buf));
         std.log.info("Vulkan Command Buffer created successfully.", .{});
-        return .{ .cmd_bufs = cmd_bufs, .pool = pool, .render_pass = render_pass, .pipeline = pipeline, .pipeline_layout = pipeline_layout, .extent = extent };
+        return .{ .cmd_buf = cmd_buf, .pool = pool, .render_pass = render_pass, .pipeline = pipeline, .pipeline_layout = pipeline_layout, .extent = extent };
     }
 
     pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize, vertex_buffer: *VulkanVertexBuffer) !void {
-        const cmd = self.cmd_bufs[frame];
+        const cmd = self.cmd_buf[frame];
         try logDevice.resetCommandBuffer(cmd, .{});
         try logDevice.beginCommandBuffer(cmd, &.{ .flags = .{} });
         logDevice.cmdBeginRenderPass(cmd, &.{
@@ -64,7 +64,7 @@ pub const VulkanCommandBuffer = struct {
     }
 
     pub fn deinit(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy) void {
-        logDevice.freeCommandBuffers(self.pool, &self.cmd_bufs);
+        logDevice.freeCommandBuffers(self.pool, &self.cmd_buf);
         logDevice.destroyCommandPool(self.pool, null);
         std.log.info("Vulkan Command Buffer Destroyed.", .{});
     }
