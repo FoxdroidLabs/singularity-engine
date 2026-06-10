@@ -1,7 +1,9 @@
+// Import standard library, Vulkan & GLFW
 const std = @import("std");
 pub const vk = @import("vulkan");
 pub const glfw = @import("zglfw");
 
+// Import all the Vulkan Necessary backend
 pub const VulkanContext = @import("./vulkan/vk_context.zig").VulkanContext;
 pub const VulkanSurface = @import("./vulkan/vk_surface.zig").VulkanSurface;
 pub const VulkanPhysicalDevice = @import("./vulkan/vk_physical_device.zig").VulkanPhysDevice;
@@ -20,6 +22,7 @@ pub const MAX_FRAMES_IN_FLIGHT = @import("./vulkan/vk_sync.zig").MAX_FRAMES_IN_F
 pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Window = @import("./window/window.zig").Window;
 
+// A Core
 pub const Core = struct {
     vkcontext: VulkanContext,
     vksurface: VulkanSurface,
@@ -38,6 +41,8 @@ pub const Core = struct {
     window: Window,
 
     pub fn init(io: std.Io, allocator: std.mem.Allocator) !Core {
+
+        // Just an hardcoded triangle
         const vertices = [_]VulkanVertexBuffer.Vertex{
             .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
             .{ .pos = .{ 0.5,  0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
@@ -48,6 +53,7 @@ pub const Core = struct {
         var core: Core = undefined;
         try glfw.init();
 
+        // Init all the vulkan backend code (it's working rn don't touch) 
         core.vkcontext = try VulkanContext.init();
         core.vkcontext.instance = vk.InstanceProxy.init(core.vkcontext.instance.handle, &core.vkcontext.vki);
         core.window = try Window.init();
@@ -71,6 +77,7 @@ pub const Core = struct {
         return core;
     }
 
+    // Allow to the window to be resized in Windows NT kernel based OS, or Linux Kernel Based OS
     pub fn recreateSwapchain(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
         self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
         self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
@@ -89,6 +96,7 @@ pub const Core = struct {
         self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
     }
 
+    // I guess it draw something ?
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
         const fb_size = self.window.handle.getFramebufferSize();
         const fb_w: u32 = @intCast(fb_size[0]);
@@ -111,6 +119,7 @@ pub const Core = struct {
         if (needs_recreate) try self.recreateSwapchain(io, allocator);
     }
 
+    // We love memory and we want it free
     pub fn deinit(self: *Core, allocator: std.mem.Allocator) void {
         _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
         self.vksync.deinit(&self.vklogicaldevice.handle);

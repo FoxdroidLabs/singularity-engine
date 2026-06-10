@@ -3,7 +3,8 @@ const glfw = @import("zglfw");
 
 pub const Window = struct {
     handle: *glfw.Window,
-
+    
+    // ..Just creating a window
     pub fn init() !Window {
         glfw.windowHint(.client_api, .no_api);
         const handle = try glfw.Window.create(1600, 800, "Singularity Engine", null, null);
