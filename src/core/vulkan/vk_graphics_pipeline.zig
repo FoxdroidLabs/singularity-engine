@@ -87,12 +87,12 @@ pub const VulkanGraphicsPipeline = struct {
                 .{
                     .stage = .{ .vertex_bit = true },
                     .module = modules.vert,
-                    .p_name = "main",
+                    .p_name = "vs_main",
                 },
                 .{
                     .stage = .{ .fragment_bit = true },
                     .module = modules.frag,
-                    .p_name = "main",
+                    .p_name = "fs_main",
                 },
             },
             .p_vertex_input_state = &.{

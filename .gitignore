@@ -6,6 +6,10 @@
 !assets/**
 !registry/
 !registry/**
+!tools/
+!tools/**
+!tools/shader/
+!tools/shader/**
 !build.zig
 !build.zig.zon
 !setup.sh

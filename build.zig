@@ -37,28 +37,34 @@ fn buildInner(b: *std.Build) !void {
     });
     exe.step.dependOn(&mkdir.step);
 
+    const naga = switch (b.graph.host.result.os.tag) {
+        .windows => "tools\\shader\\naga.exe",
+        else => "tools/shader/naga",
+    };
+
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();
     var shader_dir = try cwd.openDir(b.graph.io, shader_src_dir, .{ .iterate = true });
     defer shader_dir.close(b.graph.io);
-
     var shader_count: usize = 0;
     var it = shader_dir.iterate();
     while (try it.next(b.graph.io)) |entry| {
         if (entry.kind != .file) continue;
         const ext = std.fs.path.extension(entry.name);
-        if (!std.mem.eql(u8, ext, ".vert") and
-            !std.mem.eql(u8, ext, ".frag") and
-            !std.mem.eql(u8, ext, ".comp")) continue;
+        if (!std.mem.eql(u8, ext, ".wgsl")) continue;
         const sep = std.fs.path.sep_str;
+        const name = entry.name[0 .. entry.name.len - 5];
         const src = b.fmt("src{s}core{s}vulkan{s}shaders{s}{s}", .{ sep, sep, sep, sep, entry.name });
-        const out = b.fmt("zig-out{s}shaders{s}{s}.spv", .{ sep, sep, entry.name });
-        const glslc = b.addSystemCommand(&.{ "glslc", src, "-o", out });
-        glslc.step.dependOn(&mkdir.step);
-        exe.step.dependOn(&glslc.step);
+        const out_vert = b.fmt("zig-out{s}shaders{s}{s}.vert.spv", .{ sep, sep, name });
+        const out_frag = b.fmt("zig-out{s}shaders{s}{s}.frag.spv", .{ sep, sep, name });
+        const naga_vert = b.addSystemCommand(&.{ naga, "--entry-point", "vs_main", src, out_vert });
+        const naga_frag = b.addSystemCommand(&.{ naga, "--entry-point", "fs_main", src, out_frag });
+        naga_vert.step.dependOn(&mkdir.step);
+        naga_frag.step.dependOn(&mkdir.step);
+        exe.step.dependOn(&naga_vert.step);
+        exe.step.dependOn(&naga_frag.step);
         shader_count += 1;
     }
-
     if (shader_count == 0) return error.NoShadersFound;
 
     if (target.result.os.tag == .windows) {
