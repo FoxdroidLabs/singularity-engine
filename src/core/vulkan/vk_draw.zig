@@ -8,17 +8,7 @@ const VulkanDescriptor = @import("./vk_descriptor.zig").VulkanDescriptor;
 pub const VulkanDraw = struct {
     var first_draw = true;
 
-    pub fn draw(
-        logDevice: *const vk.DeviceProxy,
-        swapchain: vk.SwapchainKHR,
-        sync: *VulkanSync,
-        present_queue: vk.Queue,
-        graphics_queue: vk.Queue,
-        cmd_buf: *VulkanCommandBuffer,
-        framebuffers: []vk.Framebuffer,
-        vertex_buffer: *VulkanVertexBuffer,
-        descriptor: *VulkanDescriptor,
-    ) !bool {
+    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, descriptor: *VulkanDescriptor) !bool {
         const frame = sync.current_frame;
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
         const result = logDevice.acquireNextImageKHR(

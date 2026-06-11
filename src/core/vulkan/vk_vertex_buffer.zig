@@ -1,12 +1,7 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 
-pub fn findMemoryType(
-    instance: vk.InstanceProxy,
-    device: vk.PhysicalDevice,
-    type_filter: u32,
-    props: vk.MemoryPropertyFlags,
-) !u32 {
+pub fn findMemoryType(instance: vk.InstanceProxy, device: vk.PhysicalDevice, type_filter: u32, props: vk.MemoryPropertyFlags) !u32 {
     const mem_props = instance.getPhysicalDeviceMemoryProperties(device);
     for (0..mem_props.memory_type_count) |i| {
         if (type_filter & (@as(u32, 1) << @intCast(i)) != 0 and

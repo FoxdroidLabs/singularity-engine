@@ -8,12 +8,7 @@ pub const VulkanDescriptor = struct {
     sets: []vk.DescriptorSet,
     allocator: std.mem.Allocator,
 
-    pub fn init(
-        allocator: std.mem.Allocator,
-        logDevice: *const vk.DeviceProxy,
-        uniform_buffer: *Vub.VulkanUniformBuffer,
-        frames_in_flight: usize,
-    ) !VulkanDescriptor {
+    pub fn init(allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, uniform_buffer: *Vub.VulkanUniformBuffer, frames_in_flight: usize) !VulkanDescriptor {
         const dsl_binding = vk.DescriptorSetLayoutBinding{
             .binding = 0,
             .descriptor_type = .uniform_buffer,
