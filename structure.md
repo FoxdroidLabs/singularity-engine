@@ -23,8 +23,7 @@
     │   │   └── sound.zig
     │   ├── vulkan
     │   │   ├── shaders
-    │   │   │   ├── main.frag
-    │   │   │   └── main.vert
+    │   │   │   └── main.wgsl
     │   │   ├── vk_command_buffer.zig
     │   │   ├── vk_context.zig
     │   │   ├── vk_draw.zig
