@@ -55,14 +55,18 @@ pub const VulkanLogDevice = struct {
             },
         };
         const queue_count: u32 = if (families.graphics == families.present) 1 else 2;
+        
+        const features = vk.PhysicalDeviceFeatures{
+            .fill_mode_non_solid = .true,
+        };
 
         const device_info = vk.DeviceCreateInfo{
             .queue_create_info_count = queue_count,
             .p_queue_create_infos = &queue_infos,
             .enabled_extension_count = device_extension.len,
             .pp_enabled_extension_names = &device_extension,
+            .p_enabled_features = &features,
         };
-
         const device_handle = try instance.createDevice(device, &device_info, null);
         std.log.info("Vulkan Logical Device created successfully.", .{});
 

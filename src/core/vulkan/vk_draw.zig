@@ -1,17 +1,17 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
+const math = @import("../math/math.zig");
 const VulkanCommandBuffer = @import("./vk_command_buffer.zig").VulkanCommandBuffer;
 const VulkanSync = @import("./vk_sync.zig").VulkanSync;
 const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
+const VulkanIndexBuffer = @import("./vk_index_buffer.zig").VulkanIndexBuffer;
 const VulkanDescriptor = @import("./vk_descriptor.zig").VulkanDescriptor;
 const VulkanUniformBuffer = @import("./vk_uniform_buffer.zig").VulkanUniformBuffer;
-const UBO = @import("./vk_uniform_buffer.zig").UBO;
-const identityMatrix = @import("./vk_uniform_buffer.zig").identityMatrix;
 
 pub const VulkanDraw = struct {
     var first_draw = true;
 
-    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, uniform_buffer: *VulkanUniformBuffer, descriptor: *VulkanDescriptor) !bool {
+    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, index_buffer: *VulkanIndexBuffer, uniform_buffer: *VulkanUniformBuffer, descriptor: *VulkanDescriptor) !bool {
         const frame = sync.current_frame;
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
         const result = logDevice.acquireNextImageKHR(
@@ -25,15 +25,24 @@ pub const VulkanDraw = struct {
         };
         const image_index = result.image_index;
         try logDevice.resetFences(@ptrCast(&sync.in_flight[frame]));
-
         // Update UBO
-        uniform_buffer.update(@intCast(frame), UBO{
-            .model = identityMatrix(),
-            .view = identityMatrix(),
-            .proj = identityMatrix(),
+        const aspect = @as(f32, @floatFromInt(cmd_buf.extent.width)) / @as(f32, @floatFromInt(cmd_buf.extent.height));
+        const m = math.Matrix4;
+        uniform_buffer.update(@intCast(frame), .{
+            .model = m.identity().data,
+            .view = m.lookAt(
+                .{ .x = 0.0, .y = 0.0, .z = 3.0 },
+                .{ .x = 0.0, .y = 0.0, .z = 0.0 },
+                .{ .x = 0.0, .y = 1.0, .z = 0.0 },
+            ).data,
+            .proj = m.perspective(
+                std.math.degreesToRadians(45.0),
+                aspect,
+                0.1,
+                100.0,
+            ).data,
         });
-
-        try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer, descriptor);
+        try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer, index_buffer, descriptor);
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };
         try logDevice.queueSubmit(graphics_queue, &[_]vk.SubmitInfo{.{
             .wait_semaphore_count = 1,

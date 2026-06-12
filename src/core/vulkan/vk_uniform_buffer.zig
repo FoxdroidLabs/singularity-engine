@@ -1,5 +1,6 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
+const math = @import("../math/math.zig");
 const findMemoryType = @import("vk_vertex_buffer.zig").findMemoryType;
 
 pub const UBO = struct {

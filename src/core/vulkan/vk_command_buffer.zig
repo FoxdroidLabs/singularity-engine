@@ -2,6 +2,7 @@ const std = @import("std");
 const vk = @import("../core.zig").vk;
 const MAX_FRAMES_IN_FLIGHT = @import("./vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
 const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
+const VulkanIndexBuffer = @import("./vk_index_buffer.zig").VulkanIndexBuffer;
 const VulkanDescriptor = @import("./vk_descriptor.zig").VulkanDescriptor;
 
 pub const VulkanCommandBuffer = struct {
@@ -28,12 +29,11 @@ pub const VulkanCommandBuffer = struct {
         return .{ .cmd_buf = cmd_buf, .pool = pool, .render_pass = render_pass, .pipeline = pipeline, .pipeline_layout = pipeline_layout, .extent = extent };
     }
 
-    pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize, vertex_buffer: *VulkanVertexBuffer, descriptor: *VulkanDescriptor) !void {
+    pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize, vertex_buffer: *VulkanVertexBuffer, index_buffer: *VulkanIndexBuffer, descriptor: *VulkanDescriptor) !void {
         const clear_values = [_]vk.ClearValue{
             .{ .color = .{ .float_32 = self.clear_color } },
             .{ .depth_stencil = .{ .depth = 1.0, .stencil = 0 } },
         };
-
         const cmd = self.cmd_buf[frame];
         try logDevice.resetCommandBuffer(cmd, .{});
         try logDevice.beginCommandBuffer(cmd, &.{ .flags = .{} });
@@ -63,8 +63,9 @@ pub const VulkanCommandBuffer = struct {
         const aspect_ratio: f32 = @as(f32, @floatFromInt(self.extent.width)) / @as(f32, @floatFromInt(self.extent.height));
         logDevice.cmdPushConstants(cmd, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(f32), @ptrCast(&aspect_ratio));
         logDevice.cmdBindVertexBuffers(cmd, 0, &[_]vk.Buffer{vertex_buffer.buffer}, &[_]vk.DeviceSize{0});
+        logDevice.cmdBindIndexBuffer(cmd, index_buffer.buffer, 0, .uint16);
         logDevice.cmdBindDescriptorSets(cmd, .graphics, self.pipeline_layout, 0, &[_]vk.DescriptorSet{descriptor.sets[frame]}, &[_]u32{});
-        logDevice.cmdDraw(cmd, vertex_buffer.count, 1, 0, 0);
+        logDevice.cmdDrawIndexed(cmd, index_buffer.count, 1, 0, 0, 0);
         logDevice.cmdEndRenderPass(cmd);
         try logDevice.endCommandBuffer(cmd);
     }

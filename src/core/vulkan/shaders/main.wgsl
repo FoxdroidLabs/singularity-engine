@@ -19,7 +19,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = ubo.proj * ubo.view * ubo.model * vec4<f32>(in.pos, 1.0);
+    out.position = vec4<f32>(in.pos, 1.0) * ubo.model * ubo.view * ubo.proj;
     out.color = in.color;
     return out;
 }

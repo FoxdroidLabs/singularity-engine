@@ -44,12 +44,31 @@ pub const Core = struct {
     pub fn init(io: std.Io, allocator: std.mem.Allocator) !Core {
 
         // Just an hardcoded triangle
+        //const vertices = [_]VulkanVertexBuffer.Vertex{
+        //    .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
+        //    .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
+        //    .{ .pos = .{ -0.5, 0.5, 0.0 }, .color = .{ 0.0, 0.0, 1.0 } },
+        //};
+        //const indices = [_]u16{ 0, 1, 2, 2, 3, 0 };
+        //
         const vertices = [_]VulkanVertexBuffer.Vertex{
-            .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
-            .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
-            .{ .pos = .{ -0.5, 0.5, 0.0 }, .color = .{ 0.0, 0.0, 1.0 } },
+            .{ .pos = .{ -0.5, -0.5,  0.5 }, .color = .{ 1.0, 0.0, 0.0 } },
+            .{ .pos = .{  0.5, -0.5,  0.5 }, .color = .{ 0.0, 1.0, 0.0 } },
+            .{ .pos = .{  0.5,  0.5,  0.5 }, .color = .{ 0.0, 0.0, 1.0 } },
+            .{ .pos = .{ -0.5,  0.5,  0.5 }, .color = .{ 1.0, 1.0, 0.0 } },
+            .{ .pos = .{ -0.5, -0.5, -0.5 }, .color = .{ 1.0, 0.0, 1.0 } },
+            .{ .pos = .{  0.5, -0.5, -0.5 }, .color = .{ 0.0, 1.0, 1.0 } },
+            .{ .pos = .{  0.5,  0.5, -0.5 }, .color = .{ 1.0, 1.0, 1.0 } },
+            .{ .pos = .{ -0.5,  0.5, -0.5 }, .color = .{ 0.5, 0.5, 0.5 } },
         };
-        const indices = [_]u16{ 0, 1, 2, 2, 3, 0 };
+        const indices = [_]u16{
+            0, 1, 2, 2, 3, 0,
+            4, 6, 5, 6, 4, 7,
+            4, 5, 1, 1, 0, 4,
+            3, 2, 6, 6, 7, 3,
+            4, 0, 3, 3, 7, 4,
+            1, 5, 6, 6, 2, 1,
+        };
 
         var core: Core = undefined;
         try glfw.init();
@@ -118,6 +137,7 @@ pub const Core = struct {
             &self.vkcommandbuffer,
             self.vkframebuffer.handles,
             &self.vkvertexbuffer,
+            &self.vkindexbuffer,
             &self.vkuniformbuffer,
             &self.vkdescriptor,
         );
