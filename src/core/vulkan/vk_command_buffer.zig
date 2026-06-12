@@ -11,6 +11,7 @@ pub const VulkanCommandBuffer = struct {
     pipeline: vk.Pipeline,
     pipeline_layout: vk.PipelineLayout,
     extent: vk.Extent2D,
+    clear_color: [4]f32 = .{ 0.0, 0.0, 0.0, 1.0 },
 
     pub fn init(logDevice: *const vk.DeviceProxy, graphics_family: u32, render_pass: vk.RenderPass, pipeline: vk.Pipeline, pipeline_layout: vk.PipelineLayout, extent: vk.Extent2D) !VulkanCommandBuffer {
         const pool = try logDevice.createCommandPool(&.{
@@ -28,6 +29,11 @@ pub const VulkanCommandBuffer = struct {
     }
 
     pub fn record(self: *VulkanCommandBuffer, logDevice: *const vk.DeviceProxy, framebuffer: vk.Framebuffer, frame: usize, vertex_buffer: *VulkanVertexBuffer, descriptor: *VulkanDescriptor) !void {
+        const clear_values = [_]vk.ClearValue{
+            .{ .color = .{ .float_32 = self.clear_color } },
+            .{ .depth_stencil = .{ .depth = 1.0, .stencil = 0 } },
+        };
+
         const cmd = self.cmd_buf[frame];
         try logDevice.resetCommandBuffer(cmd, .{});
         try logDevice.beginCommandBuffer(cmd, &.{ .flags = .{} });
@@ -38,10 +44,8 @@ pub const VulkanCommandBuffer = struct {
                 .offset = .{ .x = 0, .y = 0 },
                 .extent = self.extent,
             },
-            .clear_value_count = 1,
-            .p_clear_values = &[_]vk.ClearValue{.{
-                .color = .{ .float_32 = .{ 0.0, 0.0, 0.0, 1.0 } },
-            }},
+            .clear_value_count = clear_values.len,
+            .p_clear_values = &clear_values,
         }, .@"inline");
         logDevice.cmdBindPipeline(cmd, .graphics, self.pipeline);
         logDevice.cmdSetViewport(cmd, 0, &[_]vk.Viewport{.{
@@ -59,7 +63,7 @@ pub const VulkanCommandBuffer = struct {
         const aspect_ratio: f32 = @as(f32, @floatFromInt(self.extent.width)) / @as(f32, @floatFromInt(self.extent.height));
         logDevice.cmdPushConstants(cmd, self.pipeline_layout, .{ .vertex_bit = true }, 0, @sizeOf(f32), @ptrCast(&aspect_ratio));
         logDevice.cmdBindVertexBuffers(cmd, 0, &[_]vk.Buffer{vertex_buffer.buffer}, &[_]vk.DeviceSize{0});
-        logDevice.cmdBindDescriptorSets(cmd, .graphics, self.pipeline_layout, 0, &[_]vk.DescriptorSet{descriptor.sets[frame]}, &[_]u32{});        
+        logDevice.cmdBindDescriptorSets(cmd, .graphics, self.pipeline_layout, 0, &[_]vk.DescriptorSet{descriptor.sets[frame]}, &[_]u32{});
         logDevice.cmdDraw(cmd, vertex_buffer.count, 1, 0, 0);
         logDevice.cmdEndRenderPass(cmd);
         try logDevice.endCommandBuffer(cmd);

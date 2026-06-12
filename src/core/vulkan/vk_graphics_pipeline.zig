@@ -130,7 +130,17 @@ pub const VulkanGraphicsPipeline = struct {
                 .alpha_to_coverage_enable = .false,
                 .alpha_to_one_enable = .false,
             },
-            .p_depth_stencil_state = null,
+            .p_depth_stencil_state = &.{
+                .depth_test_enable = .true,
+                .depth_write_enable = .true,
+                .depth_compare_op = .less,
+                .depth_bounds_test_enable = .false,
+                .stencil_test_enable = .false,
+                .front = std.mem.zeroes(vk.StencilOpState),
+                .back = std.mem.zeroes(vk.StencilOpState),
+                .min_depth_bounds = 0.0,
+                .max_depth_bounds = 1.0,
+            },
             .p_color_blend_state = &.{
                 .logic_op_enable = .false,
                 .logic_op = .copy,
