@@ -4,11 +4,14 @@ const VulkanCommandBuffer = @import("./vk_command_buffer.zig").VulkanCommandBuff
 const VulkanSync = @import("./vk_sync.zig").VulkanSync;
 const VulkanVertexBuffer = @import("./vk_vertex_buffer.zig").VulkanVertexBuffer;
 const VulkanDescriptor = @import("./vk_descriptor.zig").VulkanDescriptor;
+const VulkanUniformBuffer = @import("./vk_uniform_buffer.zig").VulkanUniformBuffer;
+const UBO = @import("./vk_uniform_buffer.zig").UBO;
+const identityMatrix = @import("./vk_uniform_buffer.zig").identityMatrix;
 
 pub const VulkanDraw = struct {
     var first_draw = true;
 
-    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, descriptor: *VulkanDescriptor) !bool {
+    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, uniform_buffer: *VulkanUniformBuffer, descriptor: *VulkanDescriptor) !bool {
         const frame = sync.current_frame;
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
         const result = logDevice.acquireNextImageKHR(
@@ -22,6 +25,14 @@ pub const VulkanDraw = struct {
         };
         const image_index = result.image_index;
         try logDevice.resetFences(@ptrCast(&sync.in_flight[frame]));
+
+        // Update UBO
+        uniform_buffer.update(@intCast(frame), UBO{
+            .model = identityMatrix(),
+            .view = identityMatrix(),
+            .proj = identityMatrix(),
+        });
+
         try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer, descriptor);
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };
         try logDevice.queueSubmit(graphics_queue, &[_]vk.SubmitInfo{.{

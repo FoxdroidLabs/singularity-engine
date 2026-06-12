@@ -8,7 +8,7 @@ pub const UBO = struct {
     proj: [4][4]f32,
 };
 
-fn identityMatrix() [4][4]f32 {
+pub fn identityMatrix() [4][4]f32 {
     var matrix: [4][4]f32 = undefined;
     for (0..4) |i| {
         for (0..4) |j| {

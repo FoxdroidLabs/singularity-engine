@@ -118,6 +118,7 @@ pub const Core = struct {
             &self.vkcommandbuffer,
             self.vkframebuffer.handles,
             &self.vkvertexbuffer,
+            &self.vkuniformbuffer,
             &self.vkdescriptor,
         );
         if (needs_recreate) try self.recreateSwapchain(io, allocator);
