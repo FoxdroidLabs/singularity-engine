@@ -1,4 +1,3 @@
-// Import standard library, Vulkan & GLFW
 const std = @import("std");
 pub const vk = @import("vulkan");
 pub const glfw = @import("zglfw");
@@ -11,11 +10,11 @@ pub const VulkanLogDevice = @import("./vulkan/vk_logical_device.zig").VulkanLogD
 pub const VulkanSwapchain = @import("./vulkan/vk_swapchain.zig").VulkanSwapchain;
 pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderpass;
 pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFramebuffer;
+pub const VulkanDepth = @import("./vulkan/vk_depth.zig").VulkanDepth;
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
 pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
 pub const VulkanVertexBuffer = @import("./vulkan/vk_vertex_buffer.zig").VulkanVertexBuffer;
 pub const VulkanIndexBuffer = @import("./vulkan/vk_index_buffer.zig").VulkanIndexBuffer;
-pub const VulkanDepth = @import("./vulkan/vk_depth.zig").VulkanDepth;
 pub const VulkanUniformBuffer = @import("./vulkan/vk_uniform_buffer.zig").VulkanUniformBuffer;
 pub const VulkanDescriptor = @import("./vulkan/vk_descriptor.zig").VulkanDescriptor;
 pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
@@ -30,9 +29,9 @@ pub const Core = struct {
     vkphysicaldevice: VulkanPhysicalDevice,
     vklogicaldevice: VulkanLogDevice,
     vkswapchain: VulkanSwapchain,
+    vkdepth: VulkanDepth,
     vkrenderpass: VulkanRenderpass,
     vkframebuffer: VulkanFramebuffer,
-    vkdepth: VulkanDepth,
     vkuniformbuffer: VulkanUniformBuffer,
     vkdescriptor: VulkanDescriptor,
     vkgraphicspipeline: VulkanGraphicsPipeline,
@@ -64,9 +63,9 @@ pub const Core = struct {
         core.vklogicaldevice = try VulkanLogDevice.init(core.vkcontext.instance, core.vkphysicaldevice.handle, core.vksurface.surface, allocator);
         core.vklogicaldevice.handle = vk.DeviceProxy.init(core.vklogicaldevice.handle.handle, &core.vklogicaldevice.vkd);
         core.vkswapchain = try VulkanSwapchain.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, core.vksurface.surface, core.window.handle, allocator);
-        core.vkrenderpass = try VulkanRenderpass.init(&core.vklogicaldevice.handle, core.vkswapchain.image_format);
-        core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkswapchain.extent);
         core.vkdepth = try VulkanDepth.init(&core.vklogicaldevice.handle, core.vkswapchain.extent, core.vkcontext.instance, core.vkphysicaldevice.handle);
+        core.vkrenderpass = try VulkanRenderpass.init(&core.vklogicaldevice.handle, core.vkswapchain.image_format, core.vkdepth.format);
+        core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkdepth.depth_view, core.vkswapchain.extent);
         core.vkuniformbuffer = try VulkanUniformBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
         core.vkdescriptor = try VulkanDescriptor.init(allocator, &core.vklogicaldevice.handle, &core.vkuniformbuffer, MAX_FRAMES_IN_FLIGHT);
         core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkdescriptor.layout, .{});
@@ -97,7 +96,7 @@ pub const Core = struct {
         self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
         self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
         self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkdescriptor.layout, .{});
-        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkswapchain.extent);
+        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkdepth.depth_view, self.vkswapchain.extent);
         self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
     }
 
