@@ -8,7 +8,7 @@ pub const UBO = struct {
     view: [4][4]f32,
     proj: [4][4]f32,
     light_pos: [3]f32,
-    _pad: f32 = 0.0, // alignement GPU
+    _pad: f32 = 0.0, // GPU Alignment
     light_color: [3]f32,
     _pad2: f32 = 0.0,
 };
