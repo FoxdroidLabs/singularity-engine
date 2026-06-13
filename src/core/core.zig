@@ -1,6 +1,7 @@
 const std = @import("std");
 pub const vk = @import("vulkan");
 pub const glfw = @import("zglfw");
+pub const math = @import("./math/math.zig");
 
 // Import all the Vulkan Necessary backend
 pub const VulkanContext = @import("./vulkan/vk_context.zig").VulkanContext;
@@ -97,7 +98,7 @@ pub const Core = struct {
     }
 
     // I guess it draw something ?
-    pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
+    pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, view: [4][4]f32) !void {
         const fb_size = self.window.handle.getFramebufferSize();
         const fb_w: u32 = @intCast(fb_size[0]);
         const fb_h: u32 = @intCast(fb_size[1]);
@@ -119,6 +120,7 @@ pub const Core = struct {
             &self.vkindexbuffer,
             &self.vkuniformbuffer,
             &self.vkdescriptor,
+            view,
             elapsed,
         );
         if (needs_recreate) try self.recreateSwapchain(io, allocator);
