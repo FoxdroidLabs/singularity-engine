@@ -13,7 +13,7 @@ pub const VulkanDescriptor = struct {
             .binding = 0,
             .descriptor_type = .uniform_buffer,
             .descriptor_count = 1,
-            .stage_flags = .{ .vertex_bit = true },
+            .stage_flags = .{ .vertex_bit = true, .fragment_bit = true },
             .p_immutable_samplers = null,
         };
         const layout = try logDevice.createDescriptorSetLayout(&.{

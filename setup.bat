@@ -37,6 +37,8 @@ mkdir "%PREFIX%\engine\assets" 2>nul
 
 copy "zig-out\bin\%BINARY%" "%PREFIX%\%BINARY%"
 copy "zig-out\shaders\*.spv" "%PREFIX%\engine\shaders\"
+mkdir "%PREFIX%\engine\assets\3D" 2>nul
+xcopy /E /I /Y "assets\models" "%PREFIX%\engine\assets\3D\" 2>nul
 copy "assets\%ICON%" "%PREFIX%\engine\assets\%ICON%"
 
 :: Shortcut via PowerShell

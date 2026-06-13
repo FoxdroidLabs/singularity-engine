@@ -7,6 +7,10 @@ pub const UBO = struct {
     model: [4][4]f32,
     view: [4][4]f32,
     proj: [4][4]f32,
+    light_pos: [3]f32,
+    _pad: f32 = 0.0, // alignement GPU
+    light_color: [3]f32,
+    _pad2: f32 = 0.0,
 };
 
 pub fn identityMatrix() [4][4]f32 {
@@ -61,6 +65,8 @@ pub const VulkanUniformBuffer = struct {
             .model = identityMatrix(),
             .view = identityMatrix(),
             .proj = identityMatrix(),
+            .light_pos = .{ 2.0, 2.0, 2.0 },
+            .light_color = .{ 1.0, 1.0, 1.0 },
         };
         for (0..frames_in_flight) |i| {
             const offset: usize = @intCast(stride * @as(vk.DeviceSize, @intCast(i)));

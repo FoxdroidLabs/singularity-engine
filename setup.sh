@@ -36,6 +36,8 @@ mkdir -p "$PREFIX/engine/shaders"
 mkdir -p "$PREFIX/engine/assets"
 cp "zig-out/bin/$BINARY" "$PREFIX/$BINARY"
 cp zig-out/shaders/*.spv "$PREFIX/engine/shaders/"
+mkdir -p "$PREFIX/engine/assets/3D"
+cp -r assets/models/* "$PREFIX/engine/assets/3D/" 2>/dev/null || true
 cp "assets/$ICON" "$PREFIX/engine/assets/$ICON"
 chmod +x "$PREFIX/$BINARY"
 DESKTOP_FILE="$HOME/.local/share/applications/$APP_NAME.desktop"

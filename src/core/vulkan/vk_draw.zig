@@ -39,6 +39,8 @@ pub const VulkanDraw = struct {
             .model = model.data,
             .view = view.data,
             .proj = proj.data,
+            .light_pos = .{ 2.0, 2.0, 2.0 },
+            .light_color = .{ 1.0, 1.0, 1.0 },
         });
         try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer, index_buffer, descriptor);
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };

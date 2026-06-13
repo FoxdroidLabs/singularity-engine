@@ -20,6 +20,7 @@ pub const VulkanDescriptor = @import("./vulkan/vk_descriptor.zig").VulkanDescrip
 pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
 pub const MAX_FRAMES_IN_FLIGHT = @import("./vulkan/vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
 pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
+pub const Mesh = @import("./vulkan/vk_mesh.zig").Mesh;
 pub const Window = @import("./window/window.zig").Window;
 
 // A Core
@@ -41,29 +42,9 @@ pub const Core = struct {
     vksync: VulkanSync,
     window: Window,
     start_time: std.Io.Timestamp,
+    mesh: Mesh,
 
     pub fn init(io: std.Io, allocator: std.mem.Allocator) !Core {
-
-        // Just an hardcoded cube
-        const vertices = [_]VulkanVertexBuffer.Vertex{
-            .{ .pos = .{ -0.5, -0.5, 0.5 }, .color = .{ 1.0, 0.0, 0.0 } },
-            .{ .pos = .{ 0.5, -0.5, 0.5 }, .color = .{ 0.0, 1.0, 0.0 } },
-            .{ .pos = .{ 0.5, 0.5, 0.5 }, .color = .{ 0.0, 0.0, 1.0 } },
-            .{ .pos = .{ -0.5, 0.5, 0.5 }, .color = .{ 1.0, 1.0, 0.0 } },
-            .{ .pos = .{ -0.5, -0.5, -0.5 }, .color = .{ 1.0, 0.0, 1.0 } },
-            .{ .pos = .{ 0.5, -0.5, -0.5 }, .color = .{ 0.0, 1.0, 1.0 } },
-            .{ .pos = .{ 0.5, 0.5, -0.5 }, .color = .{ 1.0, 1.0, 1.0 } },
-            .{ .pos = .{ -0.5, 0.5, -0.5 }, .color = .{ 0.5, 0.5, 0.5 } },
-        };
-        const indices = [_]u16{
-            0, 1, 2, 2, 3, 0,
-            4, 6, 5, 6, 4, 7,
-            4, 5, 1, 1, 0, 4,
-            3, 2, 6, 6, 7, 3,
-            4, 0, 3, 3, 7, 4,
-            1, 5, 6, 6, 2, 1,
-        };
-
         var core: Core = undefined;
         try glfw.init();
 
@@ -83,11 +64,14 @@ pub const Core = struct {
         core.vkdescriptor = try VulkanDescriptor.init(allocator, &core.vklogicaldevice.handle, &core.vkuniformbuffer, MAX_FRAMES_IN_FLIGHT);
         core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkdescriptor.layout, .{});
         core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkgraphicspipeline.layout, core.vkswapchain.extent);
-        core.vkvertexbuffer = try VulkanVertexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &vertices);
-        core.vkindexbuffer = try VulkanIndexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &indices);
+
+        // Load mesh
+        core.mesh = try Mesh.load(io, allocator, core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, "cube.obj");
+        core.vkvertexbuffer = core.mesh.vertex_buffer;
+        core.vkindexbuffer = core.mesh.index_buffer;
+
         core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle, allocator, core.vkswapchain.images_view.len);
         core.start_time = std.Io.Clock.now(.awake, io);
-
         core.window.setIcon();
         glfw.pollEvents();
         return core;
@@ -98,14 +82,12 @@ pub const Core = struct {
         self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
         self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
         _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
-
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
         self.vkdepth.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
         self.vksync.deinit(&self.vklogicaldevice.handle);
         self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
-
         self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
         self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
         self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
@@ -148,8 +130,7 @@ pub const Core = struct {
         self.vksync.deinit(&self.vklogicaldevice.handle);
         self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
         self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkindexbuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkvertexbuffer.deinit(&self.vklogicaldevice.handle);
+        self.mesh.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
         self.vkdepth.deinit(&self.vklogicaldevice.handle);
