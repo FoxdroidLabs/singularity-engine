@@ -26,21 +26,12 @@ pub const VulkanDraw = struct {
         const image_index = result.image_index;
         try logDevice.resetFences(@ptrCast(&sync.in_flight[frame]));
         // Update UBO
-        const aspect = @as(f32, @floatFromInt(cmd_buf.extent.width)) / @as(f32, @floatFromInt(cmd_buf.extent.height));
+        //const aspect = @as(f32, @floatFromInt(cmd_buf.extent.width)) / @as(f32, @floatFromInt(cmd_buf.extent.height));
         const m = math.Matrix4;
         uniform_buffer.update(@intCast(frame), .{
-            .model = m.identity().data,
-            .view = m.lookAt(
-                .{ .x = 0.0, .y = 0.0, .z = 3.0 },
-                .{ .x = 0.0, .y = 0.0, .z = 0.0 },
-                .{ .x = 0.0, .y = 1.0, .z = 0.0 },
-            ).data,
-            .proj = m.perspective(
-                std.math.degreesToRadians(45.0),
-                aspect,
-                0.1,
-                100.0,
-            ).data,
+            .model = m.transpose(m.identity()).data,
+            .view = m.transpose(m.identity()).data,
+            .proj = m.transpose(m.identity()).data,
         });
         try cmd_buf.record(logDevice, framebuffers[image_index], frame, vertex_buffer, index_buffer, descriptor);
         const wait_stage = vk.PipelineStageFlags{ .color_attachment_output_bit = true };
