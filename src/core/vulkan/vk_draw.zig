@@ -11,7 +11,7 @@ const VulkanUniformBuffer = @import("./vk_uniform_buffer.zig").VulkanUniformBuff
 pub const VulkanDraw = struct {
     var first_draw = true;
 
-    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, index_buffer: *VulkanIndexBuffer, uniform_buffer: *VulkanUniformBuffer, descriptor: *VulkanDescriptor) !bool {
+    pub fn draw(logDevice: *const vk.DeviceProxy, swapchain: vk.SwapchainKHR, sync: *VulkanSync, present_queue: vk.Queue, graphics_queue: vk.Queue, cmd_buf: *VulkanCommandBuffer, framebuffers: []vk.Framebuffer, vertex_buffer: *VulkanVertexBuffer, index_buffer: *VulkanIndexBuffer, uniform_buffer: *VulkanUniformBuffer, descriptor: *VulkanDescriptor, elapsed: f32) !bool {
         const frame = sync.current_frame;
         _ = try logDevice.waitForFences(@ptrCast(&sync.in_flight[frame]), .true, std.math.maxInt(u64));
         const result = logDevice.acquireNextImageKHR(
@@ -28,7 +28,7 @@ pub const VulkanDraw = struct {
         // Update UBO
         const aspect = @as(f32, @floatFromInt(cmd_buf.extent.width)) / @as(f32, @floatFromInt(cmd_buf.extent.height));
         const m = math.Matrix4;
-        const model = m.identity();
+        const model = m.rotationY(elapsed);
         const view = m.lookAt(
             .{ .x = 1.6, .y = 1.4, .z = 2.6 },
             .{ .x = 0.0, .y = 0.0, .z = 0.0 },

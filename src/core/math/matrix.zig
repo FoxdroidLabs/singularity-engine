@@ -73,4 +73,15 @@ pub const Matrix4 = struct {
         }
         return result;
     }
+
+    pub fn rotationY(angle: f32) Matrix4 {
+        const c = @cos(angle);
+        const s = @sin(angle);
+        var result = Matrix4.identity();
+        result.data[0][0] = c;
+        result.data[2][0] = s;
+        result.data[0][2] = -s;
+        result.data[2][2] = c;
+        return result;
+    }
 };

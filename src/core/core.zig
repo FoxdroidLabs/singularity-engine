@@ -40,26 +40,20 @@ pub const Core = struct {
     vkindexbuffer: VulkanIndexBuffer,
     vksync: VulkanSync,
     window: Window,
+    start_time: std.Io.Timestamp,
 
     pub fn init(io: std.Io, allocator: std.mem.Allocator) !Core {
 
-        // Just an hardcoded triangle
-        //const vertices = [_]VulkanVertexBuffer.Vertex{
-        //    .{ .pos = .{ 0.0, -0.5, 0.0 }, .color = .{ 1.0, 0.0, 0.0 } },
-        //    .{ .pos = .{ 0.5, 0.5, 0.0 }, .color = .{ 0.0, 1.0, 0.0 } },
-        //    .{ .pos = .{ -0.5, 0.5, 0.0 }, .color = .{ 0.0, 0.0, 1.0 } },
-        //};
-        //const indices = [_]u16{ 0, 1, 2, 2, 3, 0 };
-        //
+        // Just an hardcoded cube
         const vertices = [_]VulkanVertexBuffer.Vertex{
-            .{ .pos = .{ -0.5, -0.5,  0.5 }, .color = .{ 1.0, 0.0, 0.0 } },
-            .{ .pos = .{  0.5, -0.5,  0.5 }, .color = .{ 0.0, 1.0, 0.0 } },
-            .{ .pos = .{  0.5,  0.5,  0.5 }, .color = .{ 0.0, 0.0, 1.0 } },
-            .{ .pos = .{ -0.5,  0.5,  0.5 }, .color = .{ 1.0, 1.0, 0.0 } },
+            .{ .pos = .{ -0.5, -0.5, 0.5 }, .color = .{ 1.0, 0.0, 0.0 } },
+            .{ .pos = .{ 0.5, -0.5, 0.5 }, .color = .{ 0.0, 1.0, 0.0 } },
+            .{ .pos = .{ 0.5, 0.5, 0.5 }, .color = .{ 0.0, 0.0, 1.0 } },
+            .{ .pos = .{ -0.5, 0.5, 0.5 }, .color = .{ 1.0, 1.0, 0.0 } },
             .{ .pos = .{ -0.5, -0.5, -0.5 }, .color = .{ 1.0, 0.0, 1.0 } },
-            .{ .pos = .{  0.5, -0.5, -0.5 }, .color = .{ 0.0, 1.0, 1.0 } },
-            .{ .pos = .{  0.5,  0.5, -0.5 }, .color = .{ 1.0, 1.0, 1.0 } },
-            .{ .pos = .{ -0.5,  0.5, -0.5 }, .color = .{ 0.5, 0.5, 0.5 } },
+            .{ .pos = .{ 0.5, -0.5, -0.5 }, .color = .{ 0.0, 1.0, 1.0 } },
+            .{ .pos = .{ 0.5, 0.5, -0.5 }, .color = .{ 1.0, 1.0, 1.0 } },
+            .{ .pos = .{ -0.5, 0.5, -0.5 }, .color = .{ 0.5, 0.5, 0.5 } },
         };
         const indices = [_]u16{
             0, 1, 2, 2, 3, 0,
@@ -92,6 +86,7 @@ pub const Core = struct {
         core.vkvertexbuffer = try VulkanVertexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &vertices);
         core.vkindexbuffer = try VulkanIndexBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, &indices);
         core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle, allocator, core.vkswapchain.images_view.len);
+        core.start_time = std.Io.Clock.now(.awake, io);
 
         core.window.setIcon();
         glfw.pollEvents();
@@ -128,6 +123,8 @@ pub const Core = struct {
             try self.recreateSwapchain(io, allocator);
             return;
         }
+        const now = std.Io.Clock.now(.awake, io);
+        const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
         const needs_recreate = try VulkanDraw.draw(
             &self.vklogicaldevice.handle,
             self.vkswapchain.handle,
@@ -140,6 +137,7 @@ pub const Core = struct {
             &self.vkindexbuffer,
             &self.vkuniformbuffer,
             &self.vkdescriptor,
+            elapsed,
         );
         if (needs_recreate) try self.recreateSwapchain(io, allocator);
     }
