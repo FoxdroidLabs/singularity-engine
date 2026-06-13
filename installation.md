@@ -28,15 +28,22 @@ cd singularity-engine
 For linux:
 zig build
 
+For linux from Windows :
+zig build -Dtarget=x86_64-linux
+
 For windows:
 zig build -Dnosubsystem (The -Dnosubsystem remove the console log from when you launch the binary)
+
+For Windows From Linux :
+zig build -Dnosubsystem -Dtarget=x86_64-windows
 ```
 
 ## Run
 
-```sh
-zig build run-engine
-```
+Use the ./setup.sh or ./setup.bat, cause of the shaders you need to setup due to the hardcoded folders etc
+then run it from the folder or the Windows Menu and for linux a .desktop is created by default :
+./setup.sh for linux
+./setup.bat for windows
 
 ## Setup
 

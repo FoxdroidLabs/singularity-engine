@@ -133,8 +133,8 @@ pub const Core = struct {
         self.mesh.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
-        self.vkdepth.deinit(&self.vklogicaldevice.handle);
         self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
+        self.vkdepth.deinit(&self.vklogicaldevice.handle);
         self.vkrenderpass.deinit(&self.vklogicaldevice.handle);
         self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
         self.vklogicaldevice.handle.destroyDevice(null);
