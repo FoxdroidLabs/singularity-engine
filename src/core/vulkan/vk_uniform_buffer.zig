@@ -19,15 +19,24 @@ pub fn identityMatrix() [4][4]f32 {
     return matrix;
 }
 
+fn alignUp(value: vk.DeviceSize, alignment: vk.DeviceSize) vk.DeviceSize {
+    if (alignment == 0) return value;
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
 pub const VulkanUniformBuffer = struct {
     buffer: vk.Buffer,
     memory: vk.DeviceMemory,
-    mapped: [*]UBO,
+    mapped: [*]u8,
     count: u32,
+    stride: vk.DeviceSize,
 
     pub fn init(instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, frames_in_flight: u32) !VulkanUniformBuffer {
+        const props = instance.getPhysicalDeviceProperties(device);
+        const ubo_size: vk.DeviceSize = @intCast(@sizeOf(UBO));
+        const stride = alignUp(ubo_size, props.limits.min_uniform_buffer_offset_alignment);
         const buffer = try logDevice.createBuffer(&.{
-            .size = @sizeOf(UBO) * frames_in_flight,
+            .size = stride * frames_in_flight,
             .usage = .{ .uniform_buffer_bit = true },
             .sharing_mode = .exclusive,
         }, null);
@@ -46,7 +55,7 @@ pub const VulkanUniformBuffer = struct {
         try logDevice.bindBufferMemory(buffer, memory, 0);
 
         const data = try logDevice.mapMemory(memory, 0, vk.WHOLE_SIZE, .{});
-        const mapped: [*]UBO = @ptrCast(@alignCast(data));
+        const mapped: [*]u8 = @ptrCast(data);
 
         const identity = UBO{
             .model = identityMatrix(),
@@ -54,7 +63,9 @@ pub const VulkanUniformBuffer = struct {
             .proj = identityMatrix(),
         };
         for (0..frames_in_flight) |i| {
-            mapped[i] = identity;
+            const offset: usize = @intCast(stride * @as(vk.DeviceSize, @intCast(i)));
+            const ptr: *UBO = @ptrCast(@alignCast(mapped + offset));
+            ptr.* = identity;
         }
 
         std.log.info("Vulkan Uniform Buffer created successfully.", .{});
@@ -63,11 +74,14 @@ pub const VulkanUniformBuffer = struct {
             .memory = memory,
             .mapped = mapped,
             .count = frames_in_flight,
+            .stride = stride,
         };
     }
 
     pub fn update(self: *VulkanUniformBuffer, frame_index: u32, ubo: UBO) void {
-        self.mapped[frame_index] = ubo;
+        const offset: usize = @intCast(self.stride * @as(vk.DeviceSize, @intCast(frame_index)));
+        const ptr: *UBO = @ptrCast(@alignCast(self.mapped + offset));
+        ptr.* = ubo;
     }
 
     pub fn deinit(self: *VulkanUniformBuffer, logDevice: *const vk.DeviceProxy) void {

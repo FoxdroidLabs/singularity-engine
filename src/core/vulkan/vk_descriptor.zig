@@ -45,7 +45,7 @@ pub const VulkanDescriptor = struct {
         for (sets, 0..) |set, i| {
             const buf_info = vk.DescriptorBufferInfo{
                 .buffer = uniform_buffer.buffer,
-                .offset = @sizeOf(Vub.UBO) * i,
+                .offset = uniform_buffer.stride * @as(vk.DeviceSize, @intCast(i)),
                 .range = @sizeOf(Vub.UBO),
             };
             logDevice.updateDescriptorSets(&[_]vk.WriteDescriptorSet{.{
