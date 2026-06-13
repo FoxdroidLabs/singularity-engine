@@ -22,6 +22,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 - [x] Game loop
 - [x] Window
 - [ ] Input manager
+- [ ] Camera controller
 
 ### Rendering
 
@@ -35,10 +36,12 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
   - [x] Command pool & command buffers
   - [x] Synchronization
   - [x] Draw loop
-- [ ] Vertex buffers & mesh loading
-- [ ] Camera & MVP matrices
-- [ ] Textures & depth buffer
-- [ ] Custom lighting model
+- [x] Vertex buffers & mesh loading (OBJ)
+- [x] Camera & MVP matrices
+- [x] Depth buffer
+- [x] Custom lighting model (Phong)
+- [ ] Textures & UV mapping
+- [ ] Free camera (WASD + mouse)
 - [ ] VRAM optimization
 - [ ] Nanite-like LOD system
 
@@ -54,7 +57,7 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 - [ ] ECS (Entity Component System)
 - [ ] Scene graph
-- [ ] Asset manager
+- [ ] Asset manager (OBJ loader ✓)
 - [ ] Custom physics plugin
 - [ ] GPU UI rendering
 - [ ] Multi-threaded viewport
@@ -65,13 +68,13 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 
 ## Utils
 
+```sh
 # Count lines of Zig source (Linux only)
-
 find . -type f -name '*.zig' -not -path '*/.zig-cache/*' -not -path '*/zig-pkg/*' -print0 | xargs -0 wc -l
 
 # Count chars of Zig source (Linux only)
-
 find . -type f -name '*.zig' -not -path '*/.zig-cache/*' -not -path '*/zig-pkg/*' -print0 | xargs -0 wc -c
+```
 
 ---
 
