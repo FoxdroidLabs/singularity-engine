@@ -1,7 +1,5 @@
 const std = @import("std");
 
-// TODO: normalize, cross
-
 pub const Vector = struct {
     x: f32,
     y: f32,
