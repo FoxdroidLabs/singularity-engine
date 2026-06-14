@@ -45,37 +45,65 @@ pub const Core = struct {
     start_time: std.Io.Timestamp,
     mesh: Mesh,
 
-    pub fn init(io: std.Io, allocator: std.mem.Allocator) !Core {
-        var core: Core = undefined;
+    pub fn init(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
         try glfw.init();
+        errdefer glfw.terminate();
 
-        // Init all the vulkan backend code (it's working rn don't touch)
-        core.vkcontext = try VulkanContext.init();
-        core.vkcontext.instance = vk.InstanceProxy.init(core.vkcontext.instance.handle, &core.vkcontext.vki);
-        core.window = try Window.init();
-        core.vksurface = try VulkanSurface.init(core.vkcontext.instance.handle, core.window.handle);
-        core.vkphysicaldevice = try VulkanPhysicalDevice.init(&core.vkcontext.instance, allocator);
-        core.vklogicaldevice = try VulkanLogDevice.init(core.vkcontext.instance, core.vkphysicaldevice.handle, core.vksurface.surface, allocator);
-        core.vklogicaldevice.handle = vk.DeviceProxy.init(core.vklogicaldevice.handle.handle, &core.vklogicaldevice.vkd);
-        core.vkswapchain = try VulkanSwapchain.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, core.vksurface.surface, core.window.handle, allocator);
-        core.vkdepth = try VulkanDepth.init(&core.vklogicaldevice.handle, core.vkswapchain.extent, core.vkcontext.instance, core.vkphysicaldevice.handle);
-        core.vkrenderpass = try VulkanRenderpass.init(&core.vklogicaldevice.handle, core.vkswapchain.image_format, core.vkdepth.format);
-        core.vkframebuffer = try VulkanFramebuffer.init(allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkswapchain.images_view, core.vkdepth.depth_view, core.vkswapchain.extent);
-        core.vkuniformbuffer = try VulkanUniformBuffer.init(core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
-        core.vkdescriptor = try VulkanDescriptor.init(allocator, &core.vklogicaldevice.handle, &core.vkuniformbuffer, MAX_FRAMES_IN_FLIGHT);
-        core.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &core.vklogicaldevice.handle, core.vkrenderpass.handle, core.vkdescriptor.layout, .{});
-        core.vkcommandbuffer = try VulkanCommandBuffer.init(&core.vklogicaldevice.handle, core.vklogicaldevice.graphics_family, core.vkrenderpass.handle, core.vkgraphicspipeline.pipeline, core.vkgraphicspipeline.layout, core.vkswapchain.extent);
+        self.window = try Window.init();
+        errdefer self.window.deinit();
 
-        // Load mesh
-        core.mesh = try Mesh.load(io, allocator, core.vkcontext.instance, core.vkphysicaldevice.handle, &core.vklogicaldevice.handle, "cube.obj");
-        core.vkvertexbuffer = core.mesh.vertex_buffer;
-        core.vkindexbuffer = core.mesh.index_buffer;
+        try self.initVulkan(io, allocator);
 
-        core.vksync = try VulkanSync.init(&core.vklogicaldevice.handle, allocator, core.vkswapchain.images_view.len);
-        core.start_time = std.Io.Clock.now(.awake, io);
-        core.window.setIcon();
+        self.start_time = std.Io.Clock.now(.awake, io);
+        self.window.setIcon();
         glfw.pollEvents();
-        return core;
+    }
+
+    fn initVulkan(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
+        self.vkcontext = try VulkanContext.init();
+        self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
+        errdefer self.vkcontext.deinit();
+
+        self.vksurface = try VulkanSurface.init(self.vkcontext.instance.handle, self.window.handle);
+        errdefer self.vksurface.deinit(self.vkcontext.instance);
+
+        self.vkphysicaldevice = try VulkanPhysicalDevice.init(&self.vkcontext.instance, allocator);
+
+        self.vklogicaldevice = try VulkanLogDevice.init(self.vkcontext.instance, self.vkphysicaldevice.handle, self.vksurface.surface, allocator);
+        self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
+        errdefer self.vklogicaldevice.handle.destroyDevice(null);
+
+        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
+        errdefer self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
+
+        self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
+        errdefer self.vkdepth.deinit(&self.vklogicaldevice.handle);
+
+        self.vkrenderpass = try VulkanRenderpass.init(&self.vklogicaldevice.handle, self.vkswapchain.image_format, self.vkdepth.format);
+        errdefer self.vkrenderpass.deinit(&self.vklogicaldevice.handle);
+
+        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkdepth.depth_view, self.vkswapchain.extent);
+        errdefer self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
+
+        self.vkuniformbuffer = try VulkanUniformBuffer.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
+        errdefer self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
+
+        self.vkdescriptor = try VulkanDescriptor.init(allocator, &self.vklogicaldevice.handle, &self.vkuniformbuffer, MAX_FRAMES_IN_FLIGHT);
+        errdefer self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
+
+        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkdescriptor.layout, .{});
+        errdefer self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
+
+        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
+        errdefer self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
+
+        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube.obj");
+        errdefer self.mesh.deinit(&self.vklogicaldevice.handle);
+        self.vkvertexbuffer = self.mesh.vertex_buffer;
+        self.vkindexbuffer = self.mesh.index_buffer;
+
+        self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
+        errdefer self.vksync.deinit(&self.vklogicaldevice.handle);
     }
 
     // Allow to the window to be resized in Windows NT kernel based OS, or Linux Kernel Based OS

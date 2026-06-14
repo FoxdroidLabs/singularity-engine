@@ -20,7 +20,7 @@ pub fn main(init: std.process.Init) !void {
 
     const coreInit = try init.gpa.create(core.Core);
     defer init.gpa.destroy(coreInit);
-    coreInit.* = try core.Core.init(init.io, init.gpa);
+    try coreInit.init(init.io, init.gpa);
     defer coreInit.deinit(init.gpa);
 
     try libs.initLibs(init.gpa, init.io);
