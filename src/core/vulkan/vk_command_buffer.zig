@@ -19,6 +19,8 @@ pub const VulkanCommandBuffer = struct {
             .queue_family_index = graphics_family,
             .flags = .{ .reset_command_buffer_bit = true },
         }, null);
+        errdefer logDevice.destroyCommandPool(pool, null);
+
         var cmd_buf: [MAX_FRAMES_IN_FLIGHT]vk.CommandBuffer = undefined;
         try logDevice.allocateCommandBuffers(&.{
             .command_pool = pool,

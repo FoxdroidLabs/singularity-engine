@@ -55,7 +55,7 @@ pub const VulkanLogDevice = struct {
             },
         };
         const queue_count: u32 = if (families.graphics == families.present) 1 else 2;
-        
+
         const features = vk.PhysicalDeviceFeatures{
             .fill_mode_non_solid = .true,
         };
@@ -68,6 +68,7 @@ pub const VulkanLogDevice = struct {
             .p_enabled_features = &features,
         };
         const device_handle = try instance.createDevice(device, &device_info, null);
+        errdefer instance.destroyDevice(device_handle, null);
         std.log.info("Vulkan Logical Device created successfully.", .{});
 
         var self = VulkanLogDevice{

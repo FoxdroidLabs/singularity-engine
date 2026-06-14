@@ -33,11 +33,15 @@ pub const VulkanDepth = struct {
             .sharing_mode = .exclusive,
             .initial_layout = .undefined,
         }, null);
+        errdefer logDevice.destroyImage(depth_image, null);
+
         const depth_mem_req = logDevice.getImageMemoryRequirements(depth_image);
         const depth_memory = try logDevice.allocateMemory(&.{
             .allocation_size = depth_mem_req.size,
             .memory_type_index = try findMemoryType(instance, device, depth_mem_req.memory_type_bits, .{ .device_local_bit = true }),
         }, null);
+        errdefer logDevice.freeMemory(depth_memory, null);
+
         try logDevice.bindImageMemory(depth_image, depth_memory, 0);
         const depth_view = try logDevice.createImageView(&.{
             .image = depth_image,

@@ -2,7 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 
 pub fn tick(io: Io) !void {
-    const tps = 60;
+    const tps = 60; // FPS of the render (lock at 60 by default)
     const ns_per_tick = std.time.ns_per_s / tps;
     const start = Io.Clock.now(.awake, io);
 

@@ -19,6 +19,8 @@ pub const VulkanIndexBuffer = struct {
             .usage = .{ .index_buffer_bit = true },
             .sharing_mode = .exclusive,
         }, null);
+        errdefer logDevice.destroyBuffer(buffer, null);
+
         const mem_req = logDevice.getBufferMemoryRequirements(buffer);
         const memory = try logDevice.allocateMemory(&.{
             .allocation_size = mem_req.size,
@@ -29,6 +31,8 @@ pub const VulkanIndexBuffer = struct {
                 .{ .host_visible_bit = true, .host_coherent_bit = true },
             ),
         }, null);
+        errdefer logDevice.freeMemory(memory, null);
+
         try logDevice.bindBufferMemory(buffer, memory, 0);
         const data = try logDevice.mapMemory(memory, 0, @sizeOf(u16) * indices.len, .{});
         const ptr: [*]u16 = @ptrCast(@alignCast(data));

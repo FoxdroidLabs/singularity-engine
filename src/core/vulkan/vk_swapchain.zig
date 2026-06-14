@@ -67,10 +67,17 @@ pub const VulkanSwapchain = struct {
         };
 
         const swapchain = try logDevice.*.createSwapchainKHR(&swapchain_info, null);
+        errdefer logDevice.*.destroySwapchainKHR(swapchain, null);
         std.log.info("Vulkan Swapchain created successfully.", .{});
+
         const images = try logDevice.*.getSwapchainImagesAllocKHR(swapchain, allocator);
+        errdefer allocator.free(images);
 
         const images_view = try allocator.alloc(vk.ImageView, images.len);
+        errdefer allocator.free(images_view);
+
+        var created: usize = 0;
+        errdefer for (images_view[0..created]) |view| logDevice.*.destroyImageView(view, null);
         for (images, 0..) |image, i| {
             images_view[i] = try logDevice.*.createImageView(&.{ .image = image, .view_type = .@"2d", .format = chosen_format.format, .components = .{
                 .r = .identity,
@@ -84,6 +91,7 @@ pub const VulkanSwapchain = struct {
                 .base_array_layer = 0,
                 .layer_count = 1,
             } }, null);
+            created += 1;
         }
         std.log.info("Vulkan Images created successfully.", .{});
         return .{ .handle = swapchain, .images = images, .images_view = images_view, .image_format = chosen_format.format, .extent = extent };

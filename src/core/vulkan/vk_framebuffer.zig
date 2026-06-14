@@ -7,6 +7,11 @@ pub const VulkanFramebuffer = struct {
 
     pub fn init(allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, images_view: []vk.ImageView, depth_view: vk.ImageView, extent: vk.Extent2D) !VulkanFramebuffer {
         const handles = try allocator.alloc(vk.Framebuffer, images_view.len);
+        errdefer allocator.free(handles);
+
+        var created: usize = 0;
+        errdefer for (handles[0..created]) |fb| logDevice.destroyFramebuffer(fb, null);
+
         for (images_view, 0..) |view, i| {
             const attachments = [_]vk.ImageView{ view, depth_view };
             handles[i] = try logDevice.createFramebuffer(&.{
@@ -17,6 +22,7 @@ pub const VulkanFramebuffer = struct {
                 .height = extent.height,
                 .layers = 1,
             }, null);
+            created += 1;
         }
         std.log.info("Vulkan Framebuffer created successfully.", .{});
         return .{ .handles = handles, .allocator = allocator };

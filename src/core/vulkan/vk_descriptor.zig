@@ -20,6 +20,7 @@ pub const VulkanDescriptor = struct {
             .binding_count = 1,
             .p_bindings = @ptrCast(&dsl_binding),
         }, null);
+        errdefer logDevice.destroyDescriptorSetLayout(layout, null);
 
         const pool_size = vk.DescriptorPoolSize{
             .type = .uniform_buffer,
@@ -30,6 +31,7 @@ pub const VulkanDescriptor = struct {
             .p_pool_sizes = @ptrCast(&pool_size),
             .max_sets = @intCast(frames_in_flight),
         }, null);
+        errdefer logDevice.destroyDescriptorPool(pool, null);
 
         const layouts = try allocator.alloc(vk.DescriptorSetLayout, frames_in_flight);
         defer allocator.free(layouts);
@@ -41,6 +43,7 @@ pub const VulkanDescriptor = struct {
             .descriptor_set_count = @intCast(frames_in_flight),
             .p_set_layouts = layouts.ptr,
         }, sets.ptr);
+        errdefer allocator.free(sets);
 
         for (sets, 0..) |set, i| {
             const buf_info = vk.DescriptorBufferInfo{

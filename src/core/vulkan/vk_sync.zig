@@ -12,15 +12,30 @@ pub const VulkanSync = struct {
 
     pub fn init(logDevice: *const vk.DeviceProxy, allocator: std.mem.Allocator, image_count: usize) !VulkanSync {
         const image_available = try allocator.alloc(vk.Semaphore, image_count);
+        errdefer allocator.free(image_available);
+
         const render_finished = try allocator.alloc(vk.Semaphore, image_count);
+        errdefer allocator.free(render_finished);
+
+        var created_sem: usize = 0;
+        errdefer for (0..created_sem) |i| {
+            logDevice.destroySemaphore(image_available[i], null);
+            logDevice.destroySemaphore(render_finished[i], null);
+        };
+
         for (0..image_count) |i| {
             image_available[i] = try logDevice.createSemaphore(&.{}, null);
             render_finished[i] = try logDevice.createSemaphore(&.{}, null);
+            created_sem += 1;
         }
 
         var in_flight: [MAX_FRAMES_IN_FLIGHT]vk.Fence = undefined;
+        var created_fence: usize = 0;
+        errdefer for (0..created_fence) |i| logDevice.destroyFence(in_flight[i], null);
+
         for (0..MAX_FRAMES_IN_FLIGHT) |i| {
             in_flight[i] = try logDevice.createFence(&.{ .flags = .{ .signaled_bit = true } }, null);
+            created_fence += 1;
         }
 
         std.log.info("Vulkan Sync created successfully.", .{});
