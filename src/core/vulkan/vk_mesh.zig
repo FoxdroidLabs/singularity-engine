@@ -38,6 +38,8 @@ pub const Mesh = struct {
         defer vertices.deinit(allocator);
         var indices = std.ArrayListUnmanaged(u16).empty;
         defer indices.deinit(allocator);
+        var uvs = std.ArrayListUnmanaged([2]f32).empty;
+        defer uvs.deinit(allocator);
 
         var lines = std.mem.splitScalar(u8, content, '\n');
         while (lines.next()) |line| {
@@ -50,6 +52,11 @@ pub const Mesh = struct {
                 const y = try std.fmt.parseFloat(f32, it.next() orelse continue);
                 const z = try std.fmt.parseFloat(f32, it.next() orelse continue);
                 try normals.append(allocator, .{ x, y, z });
+            } else if (std.mem.startsWith(u8, trimmed, "vt ")) {
+                var it = std.mem.splitScalar(u8, trimmed[3..], ' ');
+                const u = try std.fmt.parseFloat(f32, it.next() orelse continue);
+                const v = try std.fmt.parseFloat(f32, it.next() orelse continue);
+                try uvs.append(allocator, .{ u, v });
             } else if (std.mem.startsWith(u8, trimmed, "v ")) {
                 var it = std.mem.splitScalar(u8, trimmed[2..], ' ');
                 const x = try std.fmt.parseFloat(f32, it.next() orelse continue);
@@ -59,25 +66,29 @@ pub const Mesh = struct {
             } else if (std.mem.startsWith(u8, trimmed, "f ")) {
                 var it = std.mem.splitScalar(u8, trimmed[2..], ' ');
                 var pos_indices: [3]u16 = undefined;
+                var uv_indices: [3]u16 = undefined;
                 var nor_indices: [3]u16 = undefined;
                 var i: usize = 0;
                 while (it.next()) |token| {
                     if (i >= 3) break;
                     var tok_it = std.mem.splitScalar(u8, token, '/');
                     const pos_str = tok_it.next() orelse continue;
-                    _ = tok_it.next(); // skip uv
+                    const uv_str = tok_it.next() orelse "1";
                     const nor_str = tok_it.next() orelse "1";
                     pos_indices[i] = (try std.fmt.parseInt(u16, pos_str, 10)) - 1;
+                    uv_indices[i] = (try std.fmt.parseInt(u16, std.mem.trim(u8, uv_str, " \r\n"), 10)) - 1;
                     nor_indices[i] = (try std.fmt.parseInt(u16, std.mem.trim(u8, nor_str, " \r\n"), 10)) - 1;
                     i += 1;
                 }
                 if (i == 3) {
                     for (0..3) |j| {
                         const normal = if (normals.items.len > 0) normals.items[nor_indices[j]] else [3]f32{ 0.0, 1.0, 0.0 };
+                        const uv = if (uvs.items.len > 0) uvs.items[uv_indices[j]] else [2]f32{ 0.0, 0.0 };
                         try vertices.append(allocator, .{
                             .pos = positions.items[pos_indices[j]],
                             .color = .{ 1.0, 1.0, 1.0 },
                             .normal = normal,
+                            .uv = uv,
                         });
                         try indices.append(allocator, @intCast(indices.items.len));
                     }

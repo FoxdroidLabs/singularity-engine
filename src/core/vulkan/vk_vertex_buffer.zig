@@ -22,7 +22,7 @@ pub const VulkanVertexBuffer = struct {
         pos: [3]f32,
         color: [3]f32,
         normal: [3]f32,
-        // uv: [2]f32, // for textures later
+        uv: [2]f32,
     };
 
     pub const binding = vk.VertexInputBindingDescription{
@@ -35,6 +35,7 @@ pub const VulkanVertexBuffer = struct {
         .{ .binding = 0, .location = 0, .format = .r32g32b32_sfloat, .offset = @offsetOf(Vertex, "pos") },
         .{ .binding = 0, .location = 1, .format = .r32g32b32_sfloat, .offset = @offsetOf(Vertex, "color") },
         .{ .binding = 0, .location = 2, .format = .r32g32b32_sfloat, .offset = @offsetOf(Vertex, "normal") },
+        .{ .binding = 0, .location = 3, .format = .r32g32b32_sfloat, .offset = @offsetOf(Vertex, "uv") },
     };
 
     pub fn init(
