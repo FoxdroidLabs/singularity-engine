@@ -41,6 +41,10 @@ fn buildInner(b: *std.Build) !void {
         .windows => "tools\\shader\\naga.exe",
         else => "tools/shader/naga",
     };
+    const chmod_naga = switch (b.graph.host.result.os.tag) {
+        .windows => null,
+        else => b.addSystemCommand(&.{ "chmod", "+x", naga }),
+    };
 
     const shader_src_dir = "src/core/vulkan/shaders";
     const cwd = std.Io.Dir.cwd();
@@ -61,6 +65,10 @@ fn buildInner(b: *std.Build) !void {
         const naga_frag = b.addSystemCommand(&.{ naga, "--entry-point", "fs_main", src, out_frag });
         naga_vert.step.dependOn(&mkdir.step);
         naga_frag.step.dependOn(&mkdir.step);
+        if (chmod_naga) |chmod| {
+            naga_vert.step.dependOn(&chmod.step);
+            naga_frag.step.dependOn(&chmod.step);
+        }
         exe.step.dependOn(&naga_vert.step);
         exe.step.dependOn(&naga_frag.step);
         shader_count += 1;

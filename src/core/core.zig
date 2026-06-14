@@ -24,6 +24,11 @@ pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Mesh = @import("./vulkan/vk_mesh.zig").Mesh;
 pub const Window = @import("./window/window.zig").Window;
 
+fn glfwErrorCallback(code: glfw.ErrorCode, desc: ?[*:0]const u8) callconv(.c) void {
+    const message = if (desc) |msg| std.mem.span(msg) else "No GLFW error description.";
+    std.log.err("GLFW error {d}: {s}", .{ code, message });
+}
+
 // A Core
 pub const Core = struct {
     vkcontext: VulkanContext,
@@ -46,6 +51,7 @@ pub const Core = struct {
     mesh: Mesh,
 
     pub fn init(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
+        _ = glfw.setErrorCallback(glfwErrorCallback);
         try glfw.init();
         errdefer glfw.terminate();
 
