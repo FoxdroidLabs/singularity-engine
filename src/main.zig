@@ -6,7 +6,19 @@ const editor = @import("editor");
 const engine = @import("engine");
 //const vk = @import("vulkan");
 
-pub fn main(init: std.process.Init) !void {
+pub fn main(init: std.process.Init) void {
+    run(init) catch |err| {
+        std.log.err("Singularity failed to start: {}", .{err});
+        switch (err) {
+            error.PlatformError => std.log.err("GLFW could not initialize the selected window platform. Try GLFW_PLATFORM=wayland, or check XWayland/Wayland runtime libraries.", .{}),
+            error.APIUnavailable => std.log.err("A required API is unavailable. Check Vulkan/GLFW support and installed drivers.", .{}),
+            else => {},
+        }
+        std.process.exit(1);
+    };
+}
+
+fn run(init: std.process.Init) !void {
     const title =
         \\
         \\  +----------------------------------+
