@@ -1,6 +1,7 @@
 const std = @import("std");
 pub const vk = @import("vulkan");
 pub const glfw = @import("zglfw");
+pub const zigimg = @import("zigimg");
 pub const math = @import("./math/math.zig");
 
 // Import all the Vulkan Necessary backend
@@ -22,6 +23,7 @@ pub const VulkanSync = @import("./vulkan/vk_sync.zig").VulkanSync;
 pub const MAX_FRAMES_IN_FLIGHT = @import("./vulkan/vk_sync.zig").MAX_FRAMES_IN_FLIGHT;
 pub const VulkanDraw = @import("./vulkan/vk_draw.zig").VulkanDraw;
 pub const Mesh = @import("./vulkan/vk_mesh.zig").Mesh;
+pub const Textures = @import("./vulkan/vk_textures.zig").Textures;
 pub const Window = @import("./window/window.zig").Window;
 
 fn glfwErrorCallback(code: glfw.ErrorCode, desc: ?[*:0]const u8) callconv(.c) void {
@@ -49,6 +51,7 @@ pub const Core = struct {
     window: Window,
     start_time: std.Io.Timestamp,
     mesh: Mesh,
+    textures: Textures,
 
     pub fn init(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
         _ = glfw.setErrorCallback(glfwErrorCallback);
@@ -103,10 +106,13 @@ pub const Core = struct {
         self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
         errdefer self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
 
-        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube.obj");
+        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube");
         errdefer self.mesh.deinit(&self.vklogicaldevice.handle);
         self.vkvertexbuffer = self.mesh.vertex_buffer;
         self.vkindexbuffer = self.mesh.index_buffer;
+
+        self.textures = try Textures.init(io, allocator, "cube");
+        //errdefer self.textures.deinit(&self.vklogicaldevice.handle);
 
         self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
         errdefer self.vksync.deinit(&self.vklogicaldevice.handle);
@@ -166,6 +172,7 @@ pub const Core = struct {
         self.vksync.deinit(&self.vklogicaldevice.handle);
         self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
         self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
+        //self.texture.deinit(&self.vklogicaldevice.handle);
         self.mesh.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);

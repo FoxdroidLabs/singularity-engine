@@ -7,8 +7,11 @@ pub const Mesh = struct {
     vertex_buffer: VulkanVertexBuffer,
     index_buffer: VulkanIndexBuffer,
 
-    pub fn load(io: std.Io, allocator: std.mem.Allocator, instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, name: []const u8) !Mesh {
-        const path = try std.fmt.allocPrint(allocator, "engine/assets/3D/{s}", .{name});
+    pub fn load(io: std.Io, allocator: std.mem.Allocator, instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, model_name: []const u8) !Mesh {
+        const model_file = try std.fmt.allocPrint(allocator, "{s}.obj", .{model_name});
+        defer allocator.free(model_file);
+
+        const path = try std.fs.path.join(allocator, &.{ "engine", "assets", "models", model_name, model_file });
         defer allocator.free(path);
         return loadObj(io, allocator, instance, device, logDevice, path);
     }
@@ -16,9 +19,11 @@ pub const Mesh = struct {
     pub fn loadObj(io: std.Io, allocator: std.mem.Allocator, instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, path: []const u8) !Mesh {
         const exe_dir = try std.process.executableDirPathAlloc(io, allocator);
         defer allocator.free(exe_dir);
+
         const full_path = try std.fs.path.join(allocator, &.{ exe_dir, path });
         defer allocator.free(full_path);
 
+        std.log.info("Loading mesh: {s}", .{full_path});
         const file = try std.Io.Dir.cwd().openFile(io, full_path, .{ .mode = .read_only });
         defer file.close(io);
 

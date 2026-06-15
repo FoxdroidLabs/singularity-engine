@@ -101,6 +101,13 @@ fn buildInner(b: *std.Build) !void {
     exe.root_module.addImport("vulkan", vulkan);
     mod.addImport("vulkan", vulkan);
 
+    const zigimg = b.dependency("zigimg", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("zigimg", zigimg.module("zigimg"));
+    mod.addImport("zigimg", zigimg.module("zigimg"));
+
     // Modules
     const libs = b.addModule("libs", .{
         .root_source_file = b.path("src/libs/libs.zig"),
