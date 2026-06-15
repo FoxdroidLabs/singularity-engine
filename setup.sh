@@ -33,10 +33,9 @@ esac
 echo ""
 echo "  Installing to $PREFIX..."
 mkdir -p "$PREFIX/engine/shaders"
-mkdir -p "$PREFIX/engine/assets"
+mkdir -p "$PREFIX/engine/assets/models"
 cp "zig-out/bin/$BINARY" "$PREFIX/$BINARY"
 cp zig-out/shaders/*.spv "$PREFIX/engine/shaders/"
-mkdir -p "$PREFIX/engine/assest/models"
 cp -r assets/models/* "$PREFIX/engine/assets/models/" 2>/dev/null || true
 cp "assets/$ICON" "$PREFIX/engine/assets/$ICON"
 chmod +x "$PREFIX/$BINARY"
