@@ -2,13 +2,11 @@ const std = @import("std");
 const vk = @import("../core.zig").vk;
 const zigimg = @import("../core.zig").zigimg;
 const findMemoryType = @import("vk_vertex_buffer.zig").findMemoryType;
-
 pub const Textures = struct {
     textures: vk.ImageView,
     textures_view: vk.ImageView,
     textures_sample: vk.Sampler,
     memory: vk.DeviceMemory,
-
     pub fn init(io: std.Io, allocator: std.mem.Allocator, texture_name: []const u8) !Textures {
         const filename = try std.fmt.allocPrint(allocator, "{s}.png", .{texture_name});
         defer allocator.free(filename);
@@ -38,7 +36,6 @@ pub const Textures = struct {
         defer image.deinit(allocator);
 
         std.log.info("Texture Loaded: {d}x{d}", .{ image.width, image.height });
-
         return .{
             .textures = .null_handle,
             .textures_view = .null_handle,
@@ -46,6 +43,5 @@ pub const Textures = struct {
             .memory = .null_handle,
         };
     }
-
     pub fn deinit() void {}
 };
