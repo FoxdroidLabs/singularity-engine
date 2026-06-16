@@ -82,7 +82,7 @@ pub const Textures = struct {
 
         try logDevice.bindImageMemory(vk_image, image_memory, 0);
 
-        std.log.info("Texture Loaded: {d}x{d}", .{ image.width, image.height });
+        fn beginSingleTimeCommands(logDevice, pool: vk.CommandPool) std.log.info("Texture Loaded: {d}x{d}", .{ image.width, image.height });
         return .{
             .textures = .null_handle,
             .textures_view = .null_handle,
