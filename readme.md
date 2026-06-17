@@ -9,10 +9,11 @@
 | Language     | Zig 0.16.0                |
 | Graphics API | Vulkan (via `vulkan-zig`) |
 | Windowing    | GLFW (via `zglfw`)        |
+| Images       | `zigimg`                  |
 
 ## Philosophy
 
-Everything is built from scratch, no third-party libs except Vulkan and GLFW.
+Everything is built from scratch. Third-party libs are kept to a minimum (Vulkan, GLFW, image loading), math, parsing, physics, audio, and editor tooling are homemade.
 
 ## Roadmap
 
@@ -21,8 +22,9 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 - [x] Tick system
 - [x] Game loop
 - [x] Window
-- [ ] Input manager
-- [ ] Camera controller
+- [x] Input manager
+- [x] Free camera (WASD + mouse)
+- [ ] Settings system (resolution, fov, keybinds)
 
 ### Rendering
 
@@ -40,27 +42,59 @@ Everything is built from scratch, no third-party libs except Vulkan and GLFW.
 - [x] Camera & MVP matrices
 - [x] Depth buffer
 - [x] Custom lighting model (Phong)
-- [ ] Textures & UV mapping
-- [ ] Free camera (WASD + mouse)
-- [ ] VRAM optimization
+- [x] Textures & UV mapping
+- [ ] Skeletal animation (bones, skinning, keyframes)
+- [ ] Shadow mapping
+- [ ] PBR materials
+- [ ] Post-processing (bloom, tone mapping, FXAA)
+- [ ] VRAM optimization (staging buffers, device-local memory)
 - [ ] Nanite-like LOD system
+
+### Audio
+
+- [ ] Audio engine core (mixing, playback)
+- [ ] Ray-traced audio (occlusion, reverb via geometry)
+- [ ] Spatial/3D audio
 
 ### Performance
 
 - [ ] Multi-threaded tick
 - [ ] Multi-threaded physics
 - [ ] GPU-accelerated particles
-- [ ] Multi-threaded ray tracing _(disabled by default)_
+- [ ] Ray tracing library _(separate optional lib, disabled by default)_
 - [ ] Light baking
 
 ### Engine
 
 - [ ] ECS (Entity Component System)
 - [ ] Scene graph
-- [ ] Asset manager (OBJ loader ✓)
+- [ ] Asset manager (OBJ loader ✓, texture loader ✓)
 - [ ] Custom physics plugin
 - [ ] GPU UI rendering
 - [ ] Multi-threaded viewport
+
+### Editor
+
+- [ ] Viewport (gizmos, transform tools)
+- [ ] Scene hierarchy panel
+- [ ] Inspector (entity/component properties)
+- [ ] File explorer
+- [ ] Integrated terminal
+- [ ] Shader editor (live WGSL editing + hot-reload)
+- [ ] Texture editor
+- [ ] Animation editor (skeletal, timeline, keyframes)
+
+### Tooling
+
+- [ ] Shader hot-reload
+- [ ] Unit tests (math, OBJ/parsing)
+- [ ] zig fmt compliance pass
+
+### Scripting
+
+- [ ] Blueprint/visual scripting system (node graph)
+- [ ] Zig codegen from blueprint graphs (primary target)
+- [ ] C codegen from blueprint graphs (secondary target)
 
 ## Project Structure
 
