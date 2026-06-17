@@ -97,7 +97,17 @@ pub const Core = struct {
         self.vkuniformbuffer = try VulkanUniformBuffer.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
         errdefer self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
 
-        self.vkdescriptor = try VulkanDescriptor.init(allocator, &self.vklogicaldevice.handle, &self.vkuniformbuffer, MAX_FRAMES_IN_FLIGHT);
+        // Mesh loaded early, no dependency on pipeline/descriptor
+        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube");
+        errdefer self.mesh.deinit(&self.vklogicaldevice.handle);
+        self.vkvertexbuffer = self.mesh.vertex_buffer;
+        self.vkindexbuffer = self.mesh.index_buffer;
+
+        // Texture loaded before the descriptor set, since the descriptor needs the sampler/view
+        self.textures = try Textures.init(io, self.vkcontext.instance, &self.vklogicaldevice.handle, self.vkphysicaldevice.handle, allocator, "cube", self.vklogicaldevice.graphics_family, self.vklogicaldevice.graphics_queue);
+        errdefer self.textures.deinit(&self.vklogicaldevice.handle);
+
+        self.vkdescriptor = try VulkanDescriptor.init(allocator, &self.vklogicaldevice.handle, &self.vkuniformbuffer, &self.textures, MAX_FRAMES_IN_FLIGHT);
         errdefer self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
 
         self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkdescriptor.layout, .{});
@@ -105,14 +115,6 @@ pub const Core = struct {
 
         self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
         errdefer self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
-
-        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube");
-        errdefer self.mesh.deinit(&self.vklogicaldevice.handle);
-        self.vkvertexbuffer = self.mesh.vertex_buffer;
-        self.vkindexbuffer = self.mesh.index_buffer;
-
-        self.textures = try Textures.init(io, allocator, "cube");
-        //errdefer self.textures.deinit(&self.vklogicaldevice.handle);
 
         self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
         errdefer self.vksync.deinit(&self.vklogicaldevice.handle);
@@ -172,7 +174,7 @@ pub const Core = struct {
         self.vksync.deinit(&self.vklogicaldevice.handle);
         self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
         self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
-        //self.texture.deinit(&self.vklogicaldevice.handle);
+        self.textures.deinit(&self.vklogicaldevice.handle);
         self.mesh.deinit(&self.vklogicaldevice.handle);
         self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);

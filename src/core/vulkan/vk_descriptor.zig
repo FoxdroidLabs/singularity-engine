@@ -1,6 +1,7 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
 const Vub = @import("vk_uniform_buffer.zig");
+const Textures = @import("vk_textures.zig").Textures;
 
 pub const VulkanDescriptor = struct {
     layout: vk.DescriptorSetLayout,
@@ -8,27 +9,44 @@ pub const VulkanDescriptor = struct {
     sets: []vk.DescriptorSet,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, uniform_buffer: *Vub.VulkanUniformBuffer, frames_in_flight: usize) !VulkanDescriptor {
-        const dsl_binding = vk.DescriptorSetLayoutBinding{
-            .binding = 0,
-            .descriptor_type = .uniform_buffer,
-            .descriptor_count = 1,
-            .stage_flags = .{ .vertex_bit = true, .fragment_bit = true },
-            .p_immutable_samplers = null,
+    pub fn init(allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, uniform_buffer: *Vub.VulkanUniformBuffer, texture: *Textures, frames_in_flight: usize) !VulkanDescriptor {
+        const dsl_bindings = [_]vk.DescriptorSetLayoutBinding{
+            .{
+                .binding = 0,
+                .descriptor_type = .uniform_buffer,
+                .descriptor_count = 1,
+                .stage_flags = .{ .vertex_bit = true, .fragment_bit = true },
+                .p_immutable_samplers = null,
+            },
+            .{
+                .binding = 1,
+                .descriptor_type = .sampler,
+                .descriptor_count = 1,
+                .stage_flags = .{ .fragment_bit = true },
+                .p_immutable_samplers = null,
+            },
+            .{
+                .binding = 2,
+                .descriptor_type = .sampled_image,
+                .descriptor_count = 1,
+                .stage_flags = .{ .fragment_bit = true },
+                .p_immutable_samplers = null,
+            },
         };
         const layout = try logDevice.createDescriptorSetLayout(&.{
-            .binding_count = 1,
-            .p_bindings = @ptrCast(&dsl_binding),
+            .binding_count = dsl_bindings.len,
+            .p_bindings = &dsl_bindings,
         }, null);
         errdefer logDevice.destroyDescriptorSetLayout(layout, null);
 
-        const pool_size = vk.DescriptorPoolSize{
-            .type = .uniform_buffer,
-            .descriptor_count = @intCast(frames_in_flight),
+        const pool_sizes = [_]vk.DescriptorPoolSize{
+            .{ .type = .uniform_buffer, .descriptor_count = @intCast(frames_in_flight) },
+            .{ .type = .sampler, .descriptor_count = @intCast(frames_in_flight) },
+            .{ .type = .sampled_image, .descriptor_count = @intCast(frames_in_flight) },
         };
         const pool = try logDevice.createDescriptorPool(&.{
-            .pool_size_count = 1,
-            .p_pool_sizes = @ptrCast(&pool_size),
+            .pool_size_count = pool_sizes.len,
+            .p_pool_sizes = &pool_sizes,
             .max_sets = @intCast(frames_in_flight),
         }, null);
         errdefer logDevice.destroyDescriptorPool(pool, null);
@@ -38,12 +56,12 @@ pub const VulkanDescriptor = struct {
         for (layouts) |*l| l.* = layout;
 
         const sets = try allocator.alloc(vk.DescriptorSet, frames_in_flight);
+        errdefer allocator.free(sets);
         try logDevice.allocateDescriptorSets(&.{
             .descriptor_pool = pool,
             .descriptor_set_count = @intCast(frames_in_flight),
             .p_set_layouts = layouts.ptr,
         }, sets.ptr);
-        errdefer allocator.free(sets);
 
         for (sets, 0..) |set, i| {
             const buf_info = vk.DescriptorBufferInfo{
@@ -51,16 +69,48 @@ pub const VulkanDescriptor = struct {
                 .offset = uniform_buffer.stride * @as(vk.DeviceSize, @intCast(i)),
                 .range = @sizeOf(Vub.UBO),
             };
-            logDevice.updateDescriptorSets(&[_]vk.WriteDescriptorSet{.{
-                .dst_set = set,
-                .dst_binding = 0,
-                .dst_array_element = 0,
-                .descriptor_type = .uniform_buffer,
-                .descriptor_count = 1,
-                .p_buffer_info = @ptrCast(&buf_info),
-                .p_image_info = undefined,
-                .p_texel_buffer_view = undefined,
-            }}, &[_]vk.CopyDescriptorSet{});
+            const sampler_info = vk.DescriptorImageInfo{
+                .sampler = texture.textures_sample,
+                .image_view = .null_handle,
+                .image_layout = .shader_read_only_optimal,
+            };
+            const image_info = vk.DescriptorImageInfo{
+                .sampler = .null_handle,
+                .image_view = texture.textures_view,
+                .image_layout = .shader_read_only_optimal,
+            };
+            logDevice.updateDescriptorSets(&[_]vk.WriteDescriptorSet{
+                .{
+                    .dst_set = set,
+                    .dst_binding = 0,
+                    .dst_array_element = 0,
+                    .descriptor_type = .uniform_buffer,
+                    .descriptor_count = 1,
+                    .p_buffer_info = @ptrCast(&buf_info),
+                    .p_image_info = undefined,
+                    .p_texel_buffer_view = undefined,
+                },
+                .{
+                    .dst_set = set,
+                    .dst_binding = 1,
+                    .dst_array_element = 0,
+                    .descriptor_type = .sampler,
+                    .descriptor_count = 1,
+                    .p_buffer_info = undefined,
+                    .p_image_info = @ptrCast(&sampler_info),
+                    .p_texel_buffer_view = undefined,
+                },
+                .{
+                    .dst_set = set,
+                    .dst_binding = 2,
+                    .dst_array_element = 0,
+                    .descriptor_type = .sampled_image,
+                    .descriptor_count = 1,
+                    .p_buffer_info = undefined,
+                    .p_image_info = @ptrCast(&image_info),
+                    .p_texel_buffer_view = undefined,
+                },
+            }, &[_]vk.CopyDescriptorSet{});
         }
 
         std.log.info("Vulkan Descriptor created successfully.", .{});
