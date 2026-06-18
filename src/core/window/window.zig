@@ -13,9 +13,9 @@ pub const Window = struct {
     }
 
     pub fn setIcon(self: *Window) void {
-        const icon48 = @embedFile("icon48.raw");
-        const icon32 = @embedFile("icon32.raw");
-        const icon16 = @embedFile("icon16.raw");
+        const icon48 = @embedFile("icons/icon48.raw");
+        const icon32 = @embedFile("icons/icon32.raw");
+        const icon16 = @embedFile("icons/icon16.raw");
         self.handle.setIcon(&.{
             .{ .width = 48, .height = 48, .pixels = @constCast(icon48) },
             .{ .width = 32, .height = 32, .pixels = @constCast(icon32) },
