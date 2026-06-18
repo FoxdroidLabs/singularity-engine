@@ -9,7 +9,7 @@ const Camera = @import("camera/camera.zig").Camera;
 pub fn initSystem(io: std.Io, window: *glfw.Window, c: *core, render_context: *VulkanRenderContext, allocator: std.mem.Allocator) !void {
     var camera = Camera.init();
     var last_time = std.Io.Clock.now(.awake, io);
-    render_context.window.handle.setInputMode(.cursor, .disabled) catch {};
+    render_context.window.handle.setInputMode(.cursor, .normal) catch {};
 
     while (true) {
         glfw.pollEvents();
