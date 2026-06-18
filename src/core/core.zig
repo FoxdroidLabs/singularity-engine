@@ -89,6 +89,11 @@ pub const Core = struct {
 
     // I guess it draw something ?
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
+        if (render_context.window.takePendingResize()) |resize| {
+            if (resize.width == 0 or resize.height == 0) return;
+            try self.recreateSwapchain(io, allocator, render_context);
+            return;
+        }
         const fb_size = render_context.window.handle.getFramebufferSize();
         const fb_w: u32 = @intCast(fb_size[0]);
         const fb_h: u32 = @intCast(fb_size[1]);

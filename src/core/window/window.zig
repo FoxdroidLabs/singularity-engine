@@ -3,11 +3,25 @@ const glfw = @import("zglfw");
 
 pub const Window = struct {
     handle: *glfw.Window,
-    
-    // ..Just creating a window
+    pub const ResizeEvent = struct { width: i32, height: i32 };
+    var pending_resize: ?ResizeEvent = null;
+
+    fn framebufferSizeCallback(window: *glfw.Window, width: c_int, height: c_int) callconv(.c) void {
+        _ = window;
+        pending_resize = .{ .width = @intCast(width), .height = @intCast(height) };
+    }
+
+    pub fn takePendingResize(self: *Window) ?ResizeEvent {
+        _ = self;
+        const event = pending_resize;
+        pending_resize = null;
+        return event;
+    }
+
     pub fn init() !Window {
-        glfw.windowHint(.client_api, .no_api); 
+        glfw.windowHint(.client_api, .no_api);
         const handle = try glfw.Window.create(1600, 800, "Singularity Engine", null, null);
+        _ = handle.setFramebufferSizeCallback(framebufferSizeCallback);
         std.log.info("Window created successfully", .{});
         return .{ .handle = handle };
     }
