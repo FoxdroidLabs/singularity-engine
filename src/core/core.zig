@@ -6,6 +6,7 @@ pub const math = @import("./math/math.zig");
 
 // Import all the Vulkan Necessary backend
 pub const VulkanContext = @import("./vulkan/vk_context.zig").VulkanContext;
+pub const VulkanRenderContext = @import("./vulkan/vk_render_context.zig").VulkanRenderContext;
 pub const VulkanSurface = @import("./vulkan/vk_surface.zig").VulkanSurface;
 pub const VulkanPhysicalDevice = @import("./vulkan/vk_physical_device.zig").VulkanPhysDevice;
 pub const VulkanLogDevice = @import("./vulkan/vk_logical_device.zig").VulkanLogDevice;
@@ -14,7 +15,9 @@ pub const VulkanRenderpass = @import("./vulkan/vk_renderpass.zig").VulkanRenderp
 pub const VulkanFramebuffer = @import("./vulkan/vk_framebuffer.zig").VulkanFramebuffer;
 pub const VulkanDepth = @import("./vulkan/vk_depth.zig").VulkanDepth;
 pub const VulkanGraphicsPipeline = @import("./vulkan/vk_graphics_pipeline.zig").VulkanGraphicsPipeline;
-pub const VulkanCommandBuffer = @import("./vulkan/vk_command_buffer.zig").VulkanCommandBuffer;
+pub const PipelineConfig = @import("./vulkan/vk_graphics_pipeline.zig").PipelineConfig;
+pub const VulkanCommand = @import("./vulkan/vk_command_buffer.zig");
+pub const VulkanCommandBuffer = VulkanCommand.VulkanCommandBuffer;
 pub const VulkanVertexBuffer = @import("./vulkan/vk_vertex_buffer.zig").VulkanVertexBuffer;
 pub const VulkanIndexBuffer = @import("./vulkan/vk_index_buffer.zig").VulkanIndexBuffer;
 pub const VulkanUniformBuffer = @import("./vulkan/vk_uniform_buffer.zig").VulkanUniformBuffer;
@@ -26,138 +29,83 @@ pub const Mesh = @import("./vulkan/vk_mesh.zig").Mesh;
 pub const Textures = @import("./vulkan/vk_textures.zig").Textures;
 pub const Window = @import("./window/window.zig").Window;
 
-fn glfwErrorCallback(code: glfw.ErrorCode, desc: ?[*:0]const u8) callconv(.c) void {
-    const message = if (desc) |msg| std.mem.span(msg) else "No GLFW error description.";
-    std.log.err("GLFW error {d}: {s}", .{ code, message });
-}
-
 // A Core
 pub const Core = struct {
-    vkcontext: VulkanContext,
-    vksurface: VulkanSurface,
-    vkphysicaldevice: VulkanPhysicalDevice,
-    vklogicaldevice: VulkanLogDevice,
-    vkswapchain: VulkanSwapchain,
-    vkdepth: VulkanDepth,
-    vkrenderpass: VulkanRenderpass,
-    vkframebuffer: VulkanFramebuffer,
     vkuniformbuffer: VulkanUniformBuffer,
     vkdescriptor: VulkanDescriptor,
     vkgraphicspipeline: VulkanGraphicsPipeline,
     vkcommandbuffer: VulkanCommandBuffer,
     vkvertexbuffer: VulkanVertexBuffer,
     vkindexbuffer: VulkanIndexBuffer,
-    vksync: VulkanSync,
-    window: Window,
     start_time: std.Io.Timestamp,
     mesh: Mesh,
     textures: Textures,
 
-    pub fn init(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
-        _ = glfw.setErrorCallback(glfwErrorCallback);
-        try glfw.init();
-        errdefer glfw.terminate();
-
-        self.window = try Window.init();
-        errdefer self.window.deinit();
-
-        try self.initVulkan(io, allocator);
-
+    pub fn init(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        try self.initVulkan3D(io, allocator, render_context);
         self.start_time = std.Io.Clock.now(.awake, io);
-        self.window.setIcon();
-        glfw.pollEvents();
     }
 
-    fn initVulkan(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
-        self.vkcontext = try VulkanContext.init();
-        self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
-        errdefer self.vkcontext.deinit();
+    fn initPipelineAndCommands(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &render_context.vklogicaldevice.handle, render_context.vkrenderpass.handle, .{
+            .descriptor_set_layouts = &[_]vk.DescriptorSetLayout{self.vkdescriptor.layout},
+            .vertex_bindings = &[_]vk.VertexInputBindingDescription{VulkanVertexBuffer.binding},
+            .vertex_attributes = VulkanVertexBuffer.attributes[0..],
+        });
+        errdefer self.vkgraphicspipeline.deinit(&render_context.vklogicaldevice.handle);
 
-        self.vksurface = try VulkanSurface.init(self.vkcontext.instance.handle, self.window.handle);
-        errdefer self.vksurface.deinit(self.vkcontext.instance);
+        self.vkcommandbuffer = try VulkanCommandBuffer.init(&render_context.vklogicaldevice.handle, render_context.vklogicaldevice.graphics_family, render_context.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, render_context.vkswapchain.extent);
+        errdefer self.vkcommandbuffer.deinit(&render_context.vklogicaldevice.handle);
+    }
 
-        self.vkphysicaldevice = try VulkanPhysicalDevice.init(&self.vkcontext.instance, allocator);
-
-        self.vklogicaldevice = try VulkanLogDevice.init(self.vkcontext.instance, self.vkphysicaldevice.handle, self.vksurface.surface, allocator);
-        self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
-        errdefer self.vklogicaldevice.handle.destroyDevice(null);
-
-        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
-        errdefer self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
-
-        self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
-        errdefer self.vkdepth.deinit(&self.vklogicaldevice.handle);
-
-        self.vkrenderpass = try VulkanRenderpass.init(&self.vklogicaldevice.handle, self.vkswapchain.image_format, self.vkdepth.format);
-        errdefer self.vkrenderpass.deinit(&self.vklogicaldevice.handle);
-
-        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkdepth.depth_view, self.vkswapchain.extent);
-        errdefer self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
-
-        self.vkuniformbuffer = try VulkanUniformBuffer.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
-        errdefer self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
+    fn initVulkan3D(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        self.vkuniformbuffer = try VulkanUniformBuffer.init(render_context.vkcontext.instance, render_context.vkphysicaldevice.handle, &render_context.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
+        errdefer self.vkuniformbuffer.deinit(&render_context.vklogicaldevice.handle);
 
         // Mesh loaded early, no dependency on pipeline/descriptor
-        self.mesh = try Mesh.load(io, allocator, self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, "cube");
-        errdefer self.mesh.deinit(&self.vklogicaldevice.handle);
+        self.mesh = try Mesh.load(io, allocator, render_context.vkcontext.instance, render_context.vkphysicaldevice.handle, &render_context.vklogicaldevice.handle, "cube");
+        errdefer self.mesh.deinit(&render_context.vklogicaldevice.handle);
         self.vkvertexbuffer = self.mesh.vertex_buffer;
         self.vkindexbuffer = self.mesh.index_buffer;
 
         // Texture loaded before the descriptor set, since the descriptor needs the sampler/view
-        self.textures = try Textures.init(io, self.vkcontext.instance, &self.vklogicaldevice.handle, self.vkphysicaldevice.handle, allocator, "cube", self.vklogicaldevice.graphics_family, self.vklogicaldevice.graphics_queue);
-        errdefer self.textures.deinit(&self.vklogicaldevice.handle);
+        self.textures = try Textures.init(io, render_context.vkcontext.instance, &render_context.vklogicaldevice.handle, render_context.vkphysicaldevice.handle, allocator, "cube", render_context.vklogicaldevice.graphics_family, render_context.vklogicaldevice.graphics_queue);
+        errdefer self.textures.deinit(&render_context.vklogicaldevice.handle);
 
-        self.vkdescriptor = try VulkanDescriptor.init(allocator, &self.vklogicaldevice.handle, &self.vkuniformbuffer, &self.textures, MAX_FRAMES_IN_FLIGHT);
-        errdefer self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
+        self.vkdescriptor = try VulkanDescriptor.init(allocator, &render_context.vklogicaldevice.handle, &self.vkuniformbuffer, &self.textures, MAX_FRAMES_IN_FLIGHT);
+        errdefer self.vkdescriptor.deinit(&render_context.vklogicaldevice.handle);
 
-        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkdescriptor.layout, .{});
-        errdefer self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
-
-        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
-        errdefer self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
-
-        self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
-        errdefer self.vksync.deinit(&self.vklogicaldevice.handle);
+        try self.initPipelineAndCommands(io, allocator, render_context);
     }
 
     // Allow to the window to be resized in Windows NT kernel based OS, or Linux Kernel Based OS
-    pub fn recreateSwapchain(self: *Core, io: std.Io, allocator: std.mem.Allocator) !void {
-        self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
-        self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
-        _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
-        self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkdepth.deinit(&self.vklogicaldevice.handle);
-        self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
-        self.vksync.deinit(&self.vklogicaldevice.handle);
-        self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
-        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
-        self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
-        self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
-        self.vkgraphicspipeline = try VulkanGraphicsPipeline.init(io, allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkdescriptor.layout, .{});
-        self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkdepth.depth_view, self.vkswapchain.extent);
-        self.vkcommandbuffer = try VulkanCommandBuffer.init(&self.vklogicaldevice.handle, self.vklogicaldevice.graphics_family, self.vkrenderpass.handle, self.vkgraphicspipeline.pipeline, self.vkgraphicspipeline.layout, self.vkswapchain.extent);
+    pub fn recreateSwapchain(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        _ = render_context.vklogicaldevice.handle.deviceWaitIdle() catch {};
+        self.vkcommandbuffer.deinit(&render_context.vklogicaldevice.handle);
+        self.vkgraphicspipeline.deinit(&render_context.vklogicaldevice.handle);
+        try render_context.recreateSwapchain(allocator);
+        try self.initPipelineAndCommands(io, allocator, render_context);
     }
 
     // I guess it draw something ?
-    pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, view: [4][4]f32) !void {
-        const fb_size = self.window.handle.getFramebufferSize();
+    pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
+        const fb_size = render_context.window.handle.getFramebufferSize();
         const fb_w: u32 = @intCast(fb_size[0]);
         const fb_h: u32 = @intCast(fb_size[1]);
-        if (fb_w != self.vkswapchain.extent.width or fb_h != self.vkswapchain.extent.height) {
-            try self.recreateSwapchain(io, allocator);
+        if (fb_w != render_context.vkswapchain.extent.width or fb_h != render_context.vkswapchain.extent.height) {
+            try self.recreateSwapchain(io, allocator, render_context);
             return;
         }
         const now = std.Io.Clock.now(.awake, io);
         const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
         const needs_recreate = try VulkanDraw.draw(
-            &self.vklogicaldevice.handle,
-            self.vkswapchain.handle,
-            &self.vksync,
-            self.vklogicaldevice.present_queue,
-            self.vklogicaldevice.graphics_queue,
+            &render_context.vklogicaldevice.handle,
+            render_context.vkswapchain.handle,
+            &render_context.vksync,
+            render_context.vklogicaldevice.present_queue,
+            render_context.vklogicaldevice.graphics_queue,
             &self.vkcommandbuffer,
-            self.vkframebuffer.handles,
+            render_context.vkframebuffer.handles,
             &self.vkvertexbuffer,
             &self.vkindexbuffer,
             &self.vkuniformbuffer,
@@ -165,27 +113,17 @@ pub const Core = struct {
             view,
             elapsed,
         );
-        if (needs_recreate) try self.recreateSwapchain(io, allocator);
+        if (needs_recreate) try self.recreateSwapchain(io, allocator, render_context);
     }
 
     // We love memory and we want it free
-    pub fn deinit(self: *Core, allocator: std.mem.Allocator) void {
-        _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
-        self.vksync.deinit(&self.vklogicaldevice.handle);
-        self.vkdescriptor.deinit(&self.vklogicaldevice.handle);
-        self.vkuniformbuffer.deinit(&self.vklogicaldevice.handle);
-        self.textures.deinit(&self.vklogicaldevice.handle);
-        self.mesh.deinit(&self.vklogicaldevice.handle);
-        self.vkcommandbuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkgraphicspipeline.deinit(&self.vklogicaldevice.handle);
-        self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
-        self.vkdepth.deinit(&self.vklogicaldevice.handle);
-        self.vkrenderpass.deinit(&self.vklogicaldevice.handle);
-        self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
-        self.vklogicaldevice.handle.destroyDevice(null);
-        self.vksurface.deinit(self.vkcontext.instance);
-        self.vkcontext.deinit();
-        self.window.deinit();
-        glfw.terminate();
+    pub fn deinit(self: *Core, render_context: *VulkanRenderContext) void {
+        _ = render_context.vklogicaldevice.handle.deviceWaitIdle() catch {};
+        self.vkdescriptor.deinit(&render_context.vklogicaldevice.handle);
+        self.vkuniformbuffer.deinit(&render_context.vklogicaldevice.handle);
+        self.textures.deinit(&render_context.vklogicaldevice.handle);
+        self.mesh.deinit(&render_context.vklogicaldevice.handle);
+        self.vkcommandbuffer.deinit(&render_context.vklogicaldevice.handle);
+        self.vkgraphicspipeline.deinit(&render_context.vklogicaldevice.handle);
     }
 };

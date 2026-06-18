@@ -109,6 +109,10 @@ fn buildInner(b: *std.Build) !void {
     mod.addImport("zigimg", zigimg.module("zigimg"));
 
     // Modules
+    const launcher = b.addModule("launcher", .{
+        .root_source_file = b.path("src/launcher/launcher.zig"),
+        .target = target,
+    });
     const libs = b.addModule("libs", .{
         .root_source_file = b.path("src/libs/libs.zig"),
     });
@@ -119,12 +123,14 @@ fn buildInner(b: *std.Build) !void {
         .root_source_file = b.path("src/engine/engine.zig"),
     });
     engine.addImport("singularity", mod);
+    launcher.addImport("singularity", mod);
 
-    for ([_]*std.Build.Module{ libs, editor, engine }) |m| {
+    for ([_]*std.Build.Module{ libs, editor, engine, launcher }) |m| {
         m.addImport("zglfw", zglfw.module("root"));
         m.addImport("vulkan", vulkan);
     }
 
+    exe.root_module.addImport("launcher", launcher);
     exe.root_module.addImport("libs", libs);
     exe.root_module.addImport("editor", editor);
     exe.root_module.addImport("engine", engine);

@@ -1,6 +1,5 @@
 const std = @import("std");
 const vk = @import("../core.zig").vk;
-const vb = @import("./vk_vertex_buffer.zig");
 
 pub const PipelineConfig = struct {
     shader_dir: []const u8 = "engine/shaders",
@@ -9,6 +8,11 @@ pub const PipelineConfig = struct {
     cull_mode: vk.CullModeFlags = .{},
     front_face: vk.FrontFace = .clockwise,
     topology: vk.PrimitiveTopology = .triangle_list,
+    depth_test_enable: bool = true,
+    blend_enable: bool = false,
+    vertex_bindings: []const vk.VertexInputBindingDescription = &.{},
+    vertex_attributes: []const vk.VertexInputAttributeDescription = &.{},
+    descriptor_set_layouts: []const vk.DescriptorSetLayout = &.{},
 };
 
 pub const VulkanGraphicsPipeline = struct {
@@ -60,7 +64,7 @@ pub const VulkanGraphicsPipeline = struct {
         return .{ .vert = vert_module, .frag = frag_module };
     }
 
-    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, descriptor_set_layout: vk.DescriptorSetLayout, config: PipelineConfig) !VulkanGraphicsPipeline {
+    pub fn init(io: std.Io, allocator: std.mem.Allocator, logDevice: *const vk.DeviceProxy, render_pass: vk.RenderPass, config: PipelineConfig) !VulkanGraphicsPipeline {
         std.log.info("Shader Stored in : {s}", .{config.shader_dir});
         const modules = try initShaderModules(io, allocator, logDevice.*, config.shader_dir, config.shader_name);
         defer logDevice.destroyShaderModule(modules.vert, null);
@@ -73,8 +77,8 @@ pub const VulkanGraphicsPipeline = struct {
         };
 
         const pipeline_layout = try logDevice.createPipelineLayout(&.{
-            .set_layout_count = 1,
-            .p_set_layouts = @ptrCast(&descriptor_set_layout),
+            .set_layout_count = @intCast(config.descriptor_set_layouts.len),
+            .p_set_layouts = if (config.descriptor_set_layouts.len > 0) config.descriptor_set_layouts.ptr else undefined,
             .push_constant_range_count = 1,
             .p_push_constant_ranges = @ptrCast(&push_constant_range),
         }, null);
@@ -96,10 +100,10 @@ pub const VulkanGraphicsPipeline = struct {
                 },
             },
             .p_vertex_input_state = &.{
-                .vertex_binding_description_count = 1,
-                .p_vertex_binding_descriptions = @ptrCast(&vb.VulkanVertexBuffer.binding),
-                .vertex_attribute_description_count = vb.VulkanVertexBuffer.attributes.len,
-                .p_vertex_attribute_descriptions = &vb.VulkanVertexBuffer.attributes,
+                .vertex_binding_description_count = @intCast(config.vertex_bindings.len),
+                .p_vertex_binding_descriptions = if (config.vertex_bindings.len > 0) config.vertex_bindings.ptr else undefined,
+                .vertex_attribute_description_count = @intCast(config.vertex_attributes.len),
+                .p_vertex_attribute_descriptions = if (config.vertex_attributes.len > 0) config.vertex_attributes.ptr else undefined,
             },
             .p_input_assembly_state = &.{
                 .topology = config.topology,
@@ -131,8 +135,8 @@ pub const VulkanGraphicsPipeline = struct {
                 .alpha_to_one_enable = .false,
             },
             .p_depth_stencil_state = &.{
-                .depth_test_enable = .true,
-                .depth_write_enable = .true,
+                .depth_test_enable = if (config.depth_test_enable) .true else .false,
+                .depth_write_enable = if (config.depth_test_enable) .true else .false,
                 .depth_compare_op = .less,
                 .depth_bounds_test_enable = .false,
                 .stencil_test_enable = .false,
@@ -146,12 +150,12 @@ pub const VulkanGraphicsPipeline = struct {
                 .logic_op = .copy,
                 .attachment_count = 1,
                 .p_attachments = &[_]vk.PipelineColorBlendAttachmentState{.{
-                    .blend_enable = .false,
-                    .src_color_blend_factor = .one,
-                    .dst_color_blend_factor = .zero,
+                    .blend_enable = if (config.blend_enable) .true else .false,
+                    .src_color_blend_factor = .src_alpha,
+                    .dst_color_blend_factor = .one_minus_src_alpha,
                     .color_blend_op = .add,
                     .src_alpha_blend_factor = .one,
-                    .dst_alpha_blend_factor = .zero,
+                    .dst_alpha_blend_factor = .one_minus_src_alpha,
                     .alpha_blend_op = .add,
                     .color_write_mask = .{ .r_bit = true, .g_bit = true, .b_bit = true, .a_bit = true },
                 }},
