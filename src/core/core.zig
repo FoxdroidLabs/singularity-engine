@@ -79,21 +79,21 @@ pub const Core = struct {
 
         try self.initPipelineAndCommands(io, allocator, render_context);
     }
-    pub fn recreateSwapchain(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+    pub fn recreateSwapchain(self: *Core, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        const fb_size = render_context.window.handle.getFramebufferSize();
+        if (fb_size[0] == 0 or fb_size[1] == 0) return; // toujours minimisé au moment réel de l'appel
         _ = render_context.vklogicaldevice.handle.deviceWaitIdle() catch {};
-        self.vkcommandbuffer.deinit(&render_context.vklogicaldevice.handle);
-        self.vkgraphicspipeline.deinit(&render_context.vklogicaldevice.handle);
         try render_context.recreateSwapchain(allocator);
-        try self.initPipelineAndCommands(io, allocator, render_context);
+        self.vkcommandbuffer.extent = render_context.vkswapchain.extent;
     }
-    
+
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
         if (render_context.window.takePendingResize()) |resize| {
-            if (resize.width == 0 or resize.height == 0) return; 
-            try self.recreateSwapchain(io, allocator, render_context);
+            if (resize.width == 0 or resize.height == 0) return; // minimisé
+            try self.recreateSwapchain(allocator, render_context);
             return;
         }
-    
+
         const now = std.Io.Clock.now(.awake, io);
         const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
         const needs_recreate = try VulkanDraw.draw(
@@ -111,7 +111,7 @@ pub const Core = struct {
             view,
             elapsed,
         );
-        if (needs_recreate) try self.recreateSwapchain(io, allocator, render_context);
+        if (needs_recreate) try self.recreateSwapchain(allocator, render_context);
     }
 
     // We love memory and we want it free
