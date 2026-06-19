@@ -52,7 +52,7 @@ pub const VulkanRenderContext = struct {
         self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
         errdefer self.vklogicaldevice.handle.destroyDevice(null);
 
-        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
+        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator, .null_handle);
         errdefer self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
 
         self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
@@ -75,13 +75,22 @@ pub const VulkanRenderContext = struct {
         self.vklogicaldevice.handle = vk.DeviceProxy.init(self.vklogicaldevice.handle.handle, &self.vklogicaldevice.vkd);
         self.vkcontext.instance = vk.InstanceProxy.init(self.vkcontext.instance.handle, &self.vkcontext.vki);
         _ = self.vklogicaldevice.handle.deviceWaitIdle() catch {};
-
+    
         self.vkframebuffer.deinit(&self.vklogicaldevice.handle);
         self.vkdepth.deinit(&self.vklogicaldevice.handle);
         self.vksync.deinit(&self.vklogicaldevice.handle);
-        self.vkswapchain.deinit(self.vklogicaldevice.handle, allocator);
-
-        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator);
+    
+        const old_swapchain = self.vkswapchain.handle;
+        const old_images_view = self.vkswapchain.images_view;
+        const old_images = self.vkswapchain.images;
+    
+        self.vkswapchain = try VulkanSwapchain.init(self.vkcontext.instance, self.vkphysicaldevice.handle, &self.vklogicaldevice.handle, self.vksurface.surface, self.window.handle, allocator, old_swapchain);
+    
+        for (old_images_view) |view| self.vklogicaldevice.handle.destroyImageView(view, null);
+        allocator.free(old_images_view);
+        allocator.free(old_images);
+        self.vklogicaldevice.handle.destroySwapchainKHR(old_swapchain, null);
+    
         self.vkdepth = try VulkanDepth.init(&self.vklogicaldevice.handle, self.vkswapchain.extent, self.vkcontext.instance, self.vkphysicaldevice.handle);
         self.vksync = try VulkanSync.init(&self.vklogicaldevice.handle, allocator, self.vkswapchain.images_view.len);
         self.vkframebuffer = try VulkanFramebuffer.init(allocator, &self.vklogicaldevice.handle, self.vkrenderpass.handle, self.vkswapchain.images_view, self.vkdepth.depth_view, self.vkswapchain.extent);

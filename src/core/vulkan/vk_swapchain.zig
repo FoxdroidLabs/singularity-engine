@@ -9,7 +9,7 @@ pub const VulkanSwapchain = struct {
     image_format: vk.Format,
     extent: vk.Extent2D,
 
-    pub fn init(instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, surface: vk.SurfaceKHR, window: *glfw.Window, allocator: std.mem.Allocator) !VulkanSwapchain {
+    pub fn init(instance: vk.InstanceProxy, device: vk.PhysicalDevice, logDevice: *const vk.DeviceProxy, surface: vk.SurfaceKHR, window: *glfw.Window, allocator: std.mem.Allocator, old_swapchain: vk.SwapchainKHR) !VulkanSwapchain {
         var surfaceFormat_count: u32 = 0;
         var presentMode_count: u32 = 0;
 
@@ -64,6 +64,7 @@ pub const VulkanSwapchain = struct {
             .pre_transform = capabilities.current_transform,
             .composite_alpha = .{ .opaque_bit_khr = true },
             .clipped = .true,
+            .old_swapchain = old_swapchain,
         };
 
         const swapchain = try logDevice.*.createSwapchainKHR(&swapchain_info, null);
