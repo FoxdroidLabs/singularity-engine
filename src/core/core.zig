@@ -80,47 +80,21 @@ pub const Core = struct {
         try self.initPipelineAndCommands(io, allocator, render_context);
     }
     pub fn recreateSwapchain(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
-        if (self.pending_size) |size| {
-            self.pending_size = null;
-            std.log.info("Resize debounce ended, size = {d}x{d}", .{ size.width, size.height });
-            if (size.width == 0 or size.height == 0) return;
-            try self.recreateSwapchain(io, allocator, render_context);
-            return;
-        }
-
         _ = render_context.vklogicaldevice.handle.deviceWaitIdle() catch {};
         self.vkcommandbuffer.deinit(&render_context.vklogicaldevice.handle);
         self.vkgraphicspipeline.deinit(&render_context.vklogicaldevice.handle);
         try render_context.recreateSwapchain(allocator);
         try self.initPipelineAndCommands(io, allocator, render_context);
     }
-
-    const RESIZE_DEBOUNCE_NS: u64 = 100_000_000; // 100ms, ajustable
-
-    // I guess it draw something ?
+    
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
-        const now = std.Io.Clock.now(.awake, io);
-        var resizing = false;
-
         if (render_context.window.takePendingResize()) |resize| {
-            self.pending_size = resize;
-            self.last_resize_time = now;
-            resizing = true;
-        } else if (self.last_resize_time) |last| {
-            const since_ns = last.durationTo(now).toNanoseconds();
-            if (since_ns < RESIZE_DEBOUNCE_NS) {
-                resizing = true;
-            } else {
-                self.last_resize_time = null;
-                if (self.pending_size) |size| {
-                    self.pending_size = null;
-                    if (size.width == 0 or size.height == 0) return;
-                    try self.recreateSwapchain(io, allocator, render_context);
-                    return;
-                }
-            }
+            if (resize.width == 0 or resize.height == 0) return; 
+            try self.recreateSwapchain(io, allocator, render_context);
+            return;
         }
-
+    
+        const now = std.Io.Clock.now(.awake, io);
         const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
         const needs_recreate = try VulkanDraw.draw(
             &render_context.vklogicaldevice.handle,
@@ -137,8 +111,7 @@ pub const Core = struct {
             view,
             elapsed,
         );
-
-        if (needs_recreate and !resizing) try self.recreateSwapchain(io, allocator, render_context);
+        if (needs_recreate) try self.recreateSwapchain(io, allocator, render_context);
     }
 
     // We love memory and we want it free
