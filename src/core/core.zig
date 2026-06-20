@@ -79,19 +79,25 @@ pub const Core = struct {
 
         try self.initPipelineAndCommands(io, allocator, render_context);
     }
+
     pub fn recreateSwapchain(self: *Core, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
         const fb_size = render_context.window.handle.getFramebufferSize();
-        if (fb_size[0] == 0 or fb_size[1] == 0) return; // toujours minimisé au moment réel de l'appel
-        _ = render_context.vklogicaldevice.handle.deviceWaitIdle() catch {};
+        if (fb_size[0] == 0 or fb_size[1] == 0) return;
+
+        _ = try render_context.vklogicaldevice.handle.waitForFences(
+            &render_context.vksync.in_flight,
+            .true, 
+            std.math.maxInt(u64),
+        );
+
         try render_context.recreateSwapchain(allocator);
         self.vkcommandbuffer.extent = render_context.vkswapchain.extent;
     }
 
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
         if (render_context.window.takePendingResize()) |resize| {
-            if (resize.width == 0 or resize.height == 0) return; // minimisé
+            if (resize.width == 0 or resize.height == 0) return;
             try self.recreateSwapchain(allocator, render_context);
-            return;
         }
 
         const now = std.Io.Clock.now(.awake, io);
