@@ -86,7 +86,7 @@ pub const Core = struct {
 
         _ = try render_context.vklogicaldevice.handle.waitForFences(
             &render_context.vksync.in_flight,
-            .true, 
+            .true,
             std.math.maxInt(u64),
         );
 
@@ -95,30 +95,30 @@ pub const Core = struct {
     }
 
     pub fn draw(self: *Core, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext, view: [4][4]f32) !void {
-        if (render_context.window.takePendingResize()) |resize| {
-            if (resize.width == 0 or resize.height == 0) return;
-            try self.recreateSwapchain(allocator, render_context);
+            if (render_context.window.takePendingResize()) |resize| {
+                if (resize.width == 0 or resize.height == 0) return;
+                try self.recreateSwapchain(allocator, render_context);
+            }
+    
+            const now = std.Io.Clock.now(.awake, io);
+            const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
+            const needs_recreate = try VulkanDraw.draw(
+                &render_context.vklogicaldevice.handle,
+                render_context.vkswapchain.handle,
+                &render_context.vksync,
+                render_context.vklogicaldevice.present_queue,
+                render_context.vklogicaldevice.graphics_queue,
+                &self.vkcommandbuffer,
+                render_context.vkframebuffer.handles,
+                &self.vkvertexbuffer,
+                &self.vkindexbuffer,
+                &self.vkuniformbuffer,
+                &self.vkdescriptor,
+                view,
+                elapsed,
+            );
+            if (needs_recreate) try self.recreateSwapchain(allocator, render_context);
         }
-
-        const now = std.Io.Clock.now(.awake, io);
-        const elapsed = @as(f32, @floatFromInt(self.start_time.durationTo(now).toNanoseconds())) / 1_000_000_000.0;
-        const needs_recreate = try VulkanDraw.draw(
-            &render_context.vklogicaldevice.handle,
-            render_context.vkswapchain.handle,
-            &render_context.vksync,
-            render_context.vklogicaldevice.present_queue,
-            render_context.vklogicaldevice.graphics_queue,
-            &self.vkcommandbuffer,
-            render_context.vkframebuffer.handles,
-            &self.vkvertexbuffer,
-            &self.vkindexbuffer,
-            &self.vkuniformbuffer,
-            &self.vkdescriptor,
-            view,
-            elapsed,
-        );
-        if (needs_recreate) try self.recreateSwapchain(allocator, render_context);
-    }
 
     // We love memory and we want it free
     pub fn deinit(self: *Core, render_context: *VulkanRenderContext) void {

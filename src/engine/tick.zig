@@ -1,18 +1,16 @@
 const std = @import("std");
 const Io = std.Io;
 
-var last_tick: ?Io.Timestamp = null;
+pub const TPS: u64 = 60;
+const NS_PER_TICK: u64 = std.time.ns_per_s / TPS;
 
-pub fn tick(io: Io) !void {
-    const tps = 60;
-    const ns_per_tick = std.time.ns_per_s / tps;
+pub fn tick(io: Io, last_tick: *?Io.Timestamp) !void {
     const now = Io.Clock.now(.awake, io);
-
-    if (last_tick) |last| {
-        const elapsed_ns = last.durationTo(now).toNanoseconds();
-        if (elapsed_ns < ns_per_tick) {
-            try io.sleep(.fromNanoseconds(ns_per_tick - elapsed_ns), .awake);
+    if (last_tick.*) |last| {
+        const elapsed_ns = now.nanoseconds -| last.nanoseconds;
+        if (elapsed_ns < NS_PER_TICK) {
+            try io.sleep(.fromNanoseconds(NS_PER_TICK - elapsed_ns), .awake);
         }
     }
-    last_tick = Io.Clock.now(.awake, io);
+    last_tick.* = Io.Clock.now(.awake, io);
 }

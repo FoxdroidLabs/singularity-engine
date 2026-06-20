@@ -58,7 +58,7 @@ Everything is built from scratch. Third-party libs are kept to a minimum (Vulkan
 
 ### Performance
 
-- [ ] Multi-threaded tick
+- [x] Multi-threaded tick (need more testing but its working)
 - [ ] Multi-threaded physics
 - [ ] GPU-accelerated particles
 - [ ] Ray tracing library _(separate optional lib, disabled by default)_
