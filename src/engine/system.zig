@@ -10,7 +10,7 @@ const Camera = @import("camera/camera.zig").Camera;
 
 var view: [4][4]f32 = [_][4]f32{[_]f32{0} ** 4} ** 4;
 var should_stop = std.atomic.Value(bool).init(false);
-var mutex: std.atomic.Mutex = .unlocked;
+var mutex: Io.Mutex = .init;
 
 fn lockSpin() void {
     while (!mutex.tryLock()) std.atomic.spinLoopHint();
@@ -20,8 +20,8 @@ fn renderLoop(io: std.Io, c: *core, render_context: *VulkanRenderContext, alloca
     var last_tick: ?Io.Timestamp = null;
     while (!should_stop.load(.acquire)) {
         tick.tick(io, &last_tick) catch {};
-        lockSpin();
-        defer mutex.unlock();
+        mutex.lockUncancelable(io);
+        defer mutex.unlock(io);
         c.draw(io, allocator, render_context, view) catch |err| {
             std.log.err("draw failed: {}", .{err});
         };
@@ -50,8 +50,8 @@ pub fn initSystem(io: std.Io, window: *glfw.Window, c: *core, render_context: *V
         const dt = @as(f32, @floatFromInt(now.nanoseconds -| last_time.nanoseconds)) / 1_000_000_000.0;
         last_time = now;
         camera.update(window, dt);
-        lockSpin();
+        mutex.lockUncancelable(io);
         view = camera.getView().data;
-        mutex.unlock();
+        mutex.unlock(io);
     }
 }
