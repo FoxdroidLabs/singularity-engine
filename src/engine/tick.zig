@@ -1,7 +1,7 @@
 const std = @import("std");
 const Io = std.Io;
 
-pub const TPS: u64 = 60;
+pub const TPS: u64 = 120;
 const NS_PER_TICK: u64 = std.time.ns_per_s / TPS;
 
 pub fn tick(io: Io, last_tick: *?Io.Timestamp) !void {
