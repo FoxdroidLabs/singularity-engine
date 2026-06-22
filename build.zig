@@ -32,8 +32,8 @@ fn buildInner(b: *std.Build) !void {
 
     // Shader compilation
     const mkdir = b.addSystemCommand(switch (b.graph.host.result.os.tag) {
-        .windows => &.{ "cmd", "/c", "if not exist zig-out\\shaders mkdir zig-out\\shaders" },
-        else => &.{ "mkdir", "-p", "zig-out/shaders" },
+        .windows => &.{ "cmd", "/c", "if not exist zig-out\\bin\\engine\\shaders mkdir zig-out\\bin\\engine\\shaders" },
+        else => &.{ "mkdir", "-p", "zig-out/bin/engine/shaders" },
     });
     exe.step.dependOn(&mkdir.step);
 
@@ -59,8 +59,8 @@ fn buildInner(b: *std.Build) !void {
         const sep = std.fs.path.sep_str;
         const name = entry.name[0 .. entry.name.len - 5];
         const src = b.fmt("src{s}core{s}vulkan{s}shaders{s}{s}", .{ sep, sep, sep, sep, entry.name });
-        const out_vert = b.fmt("zig-out{s}shaders{s}{s}.vert.spv", .{ sep, sep, name });
-        const out_frag = b.fmt("zig-out{s}shaders{s}{s}.frag.spv", .{ sep, sep, name });
+        const out_vert = b.fmt("zig-out{s}bin{s}engine{s}shaders{s}{s}.vert.spv", .{ sep, sep, sep, sep, name });
+        const out_frag = b.fmt("zig-out{s}bin{s}engine{s}shaders{s}{s}.frag.spv", .{ sep, sep, sep, sep, name });
         const naga_vert = b.addSystemCommand(&.{ naga, "--entry-point", "vs_main", src, out_vert });
         const naga_frag = b.addSystemCommand(&.{ naga, "--entry-point", "fs_main", src, out_frag });
         naga_vert.step.dependOn(&mkdir.step);
@@ -74,6 +74,14 @@ fn buildInner(b: *std.Build) !void {
         shader_count += 1;
     }
     if (shader_count == 0) return error.NoShadersFound;
+
+    const install_assets = b.addInstallDirectory(.{
+        .source_dir = b.path("assets/models"),
+        .install_dir = .{ .custom = "bin/engine/assets/models" },
+        .install_subdir = "",
+    });
+    exe.step.dependOn(&install_assets.step);
+    b.getInstallStep().dependOn(&install_assets.step);
 
     const nosubsystem = b.option(bool, "nosubsystem", "Hide console window (Windows only)") orelse false;
     if (nosubsystem) exe.subsystem = .Windows;
