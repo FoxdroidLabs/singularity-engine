@@ -64,13 +64,11 @@ pub const Core = struct {
         self.vkuniformbuffer = try VulkanUniformBuffer.init(render_context.vkcontext.instance, render_context.vkphysicaldevice.handle, &render_context.vklogicaldevice.handle, MAX_FRAMES_IN_FLIGHT);
         errdefer self.vkuniformbuffer.deinit(&render_context.vklogicaldevice.handle);
 
-        // Mesh loaded early, no dependency on pipeline/descriptor
         self.mesh = try Mesh.load(io, allocator, render_context.vkcontext.instance, render_context.vkphysicaldevice.handle, &render_context.vklogicaldevice.handle, "cube");
         errdefer self.mesh.deinit(&render_context.vklogicaldevice.handle);
         self.vkvertexbuffer = self.mesh.vertex_buffer;
         self.vkindexbuffer = self.mesh.index_buffer;
 
-        // Texture loaded before the descriptor set, since the descriptor needs the sampler/view
         self.textures = try Textures.init(io, render_context.vkcontext.instance, &render_context.vklogicaldevice.handle, render_context.vkphysicaldevice.handle, allocator, "cube", render_context.vklogicaldevice.graphics_family, render_context.vklogicaldevice.graphics_queue);
         errdefer self.textures.deinit(&render_context.vklogicaldevice.handle);
 
