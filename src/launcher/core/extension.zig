@@ -9,6 +9,12 @@
 // engine_version: $engine_version
 // entry_scene: main.scene
 
+
+// TODO: 
+// get project name to replace the "name:" string
+// get engine version to replace "engine_version:" string
+
+
 const std = @import("std");
 
 pub const ExtensionError = error{
