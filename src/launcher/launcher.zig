@@ -9,6 +9,8 @@ const VulkanCommandBuffer = core.VulkanCommandBuffer;
 const VulkanVertexBuffer = core.VulkanVertexBuffer;
 const VulkanSync = core.VulkanSync;
 const cmd = core.VulkanCommand;
+const settings = @import("./core/settings.zig").Settings;
+
 //const extension = @import("./core/extension.zig").extension;
 
 pub const Launcher = struct {
@@ -17,6 +19,7 @@ pub const Launcher = struct {
     vkvertexbuffer: VulkanVertexBuffer,
 
     pub fn init(self: *Launcher, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
+        try settings.settingsInit(io);
         const vertices = [_]VulkanVertexBuffer.UiVertex{
             .{ .pos = .{ -0.8, -0.8 }, .uv = .{ 0.0, 0.0 } },
             .{ .pos = .{ 0.8, -0.8 }, .uv = .{ 1.0, 0.0 } },
