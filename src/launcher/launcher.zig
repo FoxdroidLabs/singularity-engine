@@ -18,8 +18,8 @@ pub const Launcher = struct {
     vkcommandbuffer: VulkanCommandBuffer,
     vkvertexbuffer: VulkanVertexBuffer,
 
-    pub fn init(self: *Launcher, io: std.Io, allocator: std.mem.Allocator, render_context: *VulkanRenderContext) !void {
-        try settings.settingsInit(io);
+    pub fn init(self: *Launcher, io: std.Io, allocator: std.mem.Allocator, environ: *std.process.Environ.Map, render_context: *VulkanRenderContext) !void {
+        try settings.settingsInit(io, allocator, environ);
         const vertices = [_]VulkanVertexBuffer.UiVertex{
             .{ .pos = .{ -0.8, -0.8 }, .uv = .{ 0.0, 0.0 } },
             .{ .pos = .{ 0.8, -0.8 }, .uv = .{ 1.0, 0.0 } },

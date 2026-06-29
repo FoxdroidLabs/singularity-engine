@@ -39,7 +39,7 @@ pub fn main(init: std.process.Init) !void {
         extension.parserInit(init.io, init.gpa, "test.sproj") catch |err| {
             std.log.err("Failed to parse .sproj: {}", .{err});
         };
-        try launcher_app.init(init.io, init.gpa, render_context);
+        try launcher_app.init(init.io, init.gpa, init.environ_map, render_context);
         defer launcher_app.deinit(render_context);
         try launcher_app.run(init.io, init.gpa, render_context);
         return;
