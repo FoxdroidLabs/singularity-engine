@@ -13,6 +13,7 @@ pub const Settings = struct {
     const buf_size = 1024 * 4;
     var buffer: [buf_size]u8 = undefined;
 
+    // Settings File
     pub fn settingsInit(io: std.Io, allocator: std.mem.Allocator, environ: *std.process.Environ.Map) !void {
         const home = environ.get("HOME") orelse environ.get("USERPROFILE") orelse return error.HomeNotFound;
 
@@ -33,11 +34,10 @@ pub const Settings = struct {
         try FirstWriteConfigFile.end();
         try FirstWriteConfigFile.interface.writeAll(projects_path);
         try FirstWriteConfigFile.interface.flush();
-
         try FirstWriteConfigFile.seekTo(0);
-
         defer createConfigFile.close(io);
 
+        // Project Dir
         const home_dir = try std.Io.Dir.cwd().openDir(io, home, .{});
         defer home_dir.close(io);
         const documents_dir = try home_dir.openDir(io, "Documents", .{});
