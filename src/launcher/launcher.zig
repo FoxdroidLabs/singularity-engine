@@ -61,6 +61,7 @@ pub const Launcher = struct {
         const fb_size = render_context.window.handle.getFramebufferSize();
         const fb_w: u32 = @intCast(fb_size[0]);
         const fb_h: u32 = @intCast(fb_size[1]);
+        if (fb_w == 0 or fb_h == 0) return;
         if (fb_w != render_context.vkswapchain.extent.width or fb_h != render_context.vkswapchain.extent.height) {
             try self.recreateSwapchain(io, allocator, render_context);
             return;
