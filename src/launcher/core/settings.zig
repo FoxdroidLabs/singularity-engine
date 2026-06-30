@@ -1,9 +1,9 @@
 // Write a settings.cfg (Done)
 // Windows projects : Stored in Documents/Projects by default (Done)
-// Linux projects : Stored in Documents/Projects by default (On test)
-// Possibility to change the projects folder and save it
-// Settings will also have other things like the shader rebuild for the engine/projects if anything is corrupted
-// Maybe a project repair too
+// Linux projects : Stored in Documents/Projects by default (Done)
+// Possibility to change the projects folder and save it (Need UI)
+// Settings will also have other things like the shader rebuild for the engine/projects if anything is corrupted (Need UI)
+// Maybe a project repair too (Need UI)
 //
 const std = @import("std");
 const mem = std.mem;
